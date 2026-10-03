@@ -1,8 +1,8 @@
 name: Glasshouse
-version: "0.5.0"
-slug: ha_dashboard
+version: "0.6.0"
+slug: glasshouse
 description: Glassy, fast, drag-and-drop Home Assistant dashboard — free layout, templated cards, Octopus energy cards
-url: https://github.com/leacho73/ha-dashboard
+url: https://github.com/leacho73/glasshouse
 arch:
   - aarch64
   - amd64

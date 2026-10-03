@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.13.0
+
+- **Smart alignment** while editing: dragged or resized cards snap to the edges of other cards, with pink guide lines showing what lined up. Resizing also snaps to the same height or width as other cards (they're outlined while it matches).
+- **Shift-drag** now moves a card freely to the pixel (no snapping). Shift-click still adds / removes cards from the selection.
+- Wall tablets (*Fit the whole view on screen*): when a tall view is shrunk to fit, the cards now widen to use the full screen width instead of leaving a gap on the right.
+- Navigation card: views sit centred in the card, and a short card no longer shows a needless scrollbar.
+- Entity pickers (People card and other lists): the list opens again when you click back into the box after picking.
+
 ## 0.12.2
 
 - Fixed live cameras showing a frozen picture in the add-on. Home Assistant's add-on proxy waits for a response to finish before passing it on, and a live stream never finishes. Live streams now go straight to Home Assistant, and if that isn't possible (e.g. HA uses SSL) the card falls back to refreshing snapshots about twice a second.

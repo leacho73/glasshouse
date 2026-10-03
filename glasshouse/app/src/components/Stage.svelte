@@ -36,6 +36,9 @@
   const stageW = $derived(fill ? available / scale : L.width);
   const left = $derived(fill ? 0 : Math.max(0, (available - L.width * scale) / 2));
   const mainW = $derived(stageW - sb);
+  // ...and widen the main area's cards to use that space, rather than leaving a
+  // gap on the right (text keeps its size; cards just get wider).
+  const kx = $derived(fill ? mainW / (L.width - sb) : 1);
   const origin = (zone) => ({
     x: zone === 'sidebar' ? (L.sidebar.side === 'right' ? stageW - sb : 0) : L.sidebar.side === 'right' ? 0 : sb,
     y: zone === 'sidebar' ? scrollY / scale - (sbEl?.scrollTop || 0) : 0,
@@ -60,29 +63,63 @@
 
   let op = $state(null); // active drag / resize / box-select
   const snap = (v, free) => (free ? Math.round(v) : Math.round(v / GRID) * GRID);
+  // Smart alignment: edges and sizes of the other cards in the zone that a
+  // dragged edge snaps to (within SNAP px), shown as guide lines.
+  const SNAP = 8;
+  function targets(zone, skip) {
+    const t = { xs: [], ys: [], ws: [], hs: [] };
+    (L.zones[zone] || []).forEach((p, i) => {
+      if (skip.includes(i)) return;
+      t.xs.push(p.x, p.x + p.w); t.ys.push(p.y, p.y + p.h); t.ws.push([p.w, i]); t.hs.push([p.h, i]);
+    });
+    return t;
+  }
+  function near(vals, ts) {
+    let best = null;
+    for (const v of vals) for (const t of ts) {
+      const d = t - v;
+      if (Math.abs(d) <= SNAP && (!best || Math.abs(d) < Math.abs(best.d))) best = { d, t };
+    }
+    return best;
+  }
+  function sameSize(v, ts) {
+    const m = near([v], ts.map((x) => x[0]));
+    return m && { v: m.t, cards: ts.filter((x) => x[0] === m.t).map((x) => x[1]) };
+  }
 
   function begin(e, zone, index, mode, dir) {
     if (!app.editing || e.button > 0) return;
     e.stopPropagation();
     e.preventDefault();
     ensureEditable();
-    if (mode === 'move' && (e.shiftKey || e.ctrlKey || e.metaKey)) {
-      // Add / remove from the selection.
-      if (app.selected?.zone !== zone) { app.selected = { zone, index }; app.multi = [index]; return; }
-      const cur = new Set(app.multi.length ? app.multi : selectionSet());
-      cur.has(index) ? cur.delete(index) : cur.add(index);
-      app.multi = [...cur];
-      if (!cur.has(app.selected.index) && cur.size) app.selected = { zone, index: [...cur][0] };
+    if (mode === 'move' && (e.ctrlKey || e.metaKey)) return toggleSel(zone, index);
+    if (mode === 'move' && e.shiftKey) {
+      // Shift: a click toggles the selection (in end), a drag moves freely (in move).
+      op = { mode: 'pending', zone, index, dir, sx: e.clientX, sy: e.clientY };
+      e.currentTarget.setPointerCapture(e.pointerId);
       return;
     }
+    startOp(e, zone, index, mode, dir);
+  }
+
+  /** Add / remove a card from the selection. */
+  function toggleSel(zone, index) {
+    if (app.selected?.zone !== zone) { app.selected = { zone, index }; app.multi = [index]; return; }
+    const cur = new Set(app.multi.length ? app.multi : selectionSet());
+    cur.has(index) ? cur.delete(index) : cur.add(index);
+    app.multi = [...cur];
+    if (!cur.has(app.selected.index) && cur.size) app.selected = { zone, index: [...cur][0] };
+  }
+
+  function startOp(e, zone, index, mode, dir) {
     const list = L.zones[zone];
     const keep = app.selected?.zone === zone && sel.has(index);
     if (!keep) { app.multi = []; app.single = false; }
     if (!keep || mode === 'resize') app.selected = { zone, index };
     app.panel = 'card';
     const idx = mode === 'move' ? selectionSet() : [index];
-    op = { zone, index, mode, dir, sx: e.clientX, sy: e.clientY, idx, o: idx.map((i) => ({ ...list[i] })), moved: false };
-    e.currentTarget.setPointerCapture(e.pointerId);
+    op = { zone, index, mode, dir, sx: e.clientX, sy: e.clientY, idx, o: idx.map((i) => ({ ...list[i] })), moved: false, t: targets(zone, idx), guides: [], same: [] };
+    e.currentTarget?.setPointerCapture(e.pointerId);
   }
 
   function move(e) {
@@ -92,35 +129,54 @@
       op.x2 = p.x; op.y2 = p.y;
       return;
     }
-    const list = L.zones[op.zone];
-    const dx = (e.clientX - op.sx) / scale;
-    const dy = (e.clientY - op.sy) / scale;
+    let dx = (e.clientX - op.sx) / scale;
+    let dy = (e.clientY - op.sy) / scale;
     if (!op.moved && Math.hypot(dx, dy) < 3) return;
+    if (op.mode === 'pending') {
+      // Shift-drag on a card: move it (and its selection) freely.
+      const { sx, sy, zone, index, dir } = op;
+      op = null;
+      startOp({ clientX: sx, clientY: sy, currentTarget: null }, zone, index, 'move', dir);
+    }
+    const list = L.zones[op.zone];
     op.moved = true;
     const free = e.shiftKey;
+    const guides = [], same = [];
     if (op.mode === 'move') {
-      // Snap the group's first card; move the rest by the same amount.
+      // Snap the selection's edges to other cards' edges, else the first card to the grid.
       const o0 = op.o[0];
-      const sx = snap(o0.x + dx, free) - o0.x;
-      const minY = Math.min(...op.o.map((o) => o.y));
-      const sy = Math.max(-minY, snap(o0.y + dy, free) - o0.y);
+      const bx = Math.min(...op.o.map((o) => o.x)), by = Math.min(...op.o.map((o) => o.y));
+      const bw = Math.max(...op.o.map((o) => o.x + o.w)) - bx, bh = Math.max(...op.o.map((o) => o.y + o.h)) - by;
+      const mx = !free && near([bx + dx, bx + bw + dx], op.t.xs);
+      const my = !free && near([by + dy, by + bh + dy], op.t.ys);
+      const sx = mx ? Math.round(dx + mx.d) : snap(o0.x + dx, free) - o0.x;
+      const sy = Math.max(-by, my ? Math.round(dy + my.d) : snap(o0.y + dy, free) - o0.y);
+      if (mx) guides.push({ x: mx.t });
+      if (my) guides.push({ y: my.t });
       op.idx.forEach((i, k) => { list[i].x = op.o[k].x + sx; list[i].y = op.o[k].y + sy; });
-      return;
+    } else {
+      const p = list[op.index];
+      const o = op.o[0];
+      const d = op.dir;
+      const MIN = 30;
+      // An edge snaps to another card's edge; failing that the size snaps to a
+      // card of the same width / height; failing that, the grid.
+      const edge = (v, ts, g) => { const m = !free && near([v], ts); if (m) guides.push({ [g]: m.t }); return m ? m.t : null; };
+      const size = (v, ts) => { const m = !free && sameSize(v, ts); if (m) same.push(...m.cards); return m ? m.v : null; };
+      if (d.includes('e')) { const r = edge(o.x + o.w + dx, op.t.xs, 'x'); p.w = Math.max(MIN, r != null ? r - o.x : size(o.w + dx, op.t.ws) ?? snap(o.w + dx, free)); }
+      if (d.includes('s')) { const b = edge(o.y + o.h + dy, op.t.ys, 'y'); p.h = Math.max(MIN, b != null ? b - o.y : size(o.h + dy, op.t.hs) ?? snap(o.h + dy, free)); }
+      if (d.includes('w')) { const l = edge(o.x + dx, op.t.xs, 'x'); const nx = Math.min(o.x + o.w - MIN, l ?? snap(o.x + dx, free)); p.w = o.w + (o.x - nx); p.x = nx; }
+      if (d.includes('n')) { const t = edge(o.y + dy, op.t.ys, 'y'); const ny = Math.max(0, Math.min(o.y + o.h - MIN, t ?? snap(o.y + dy, free))); p.h = o.h + (o.y - ny); p.y = ny; }
     }
-    const p = list[op.index];
-    const o = op.o[0];
-    const d = op.dir;
-    const MIN = 30;
-    if (d.includes('e')) p.w = Math.max(MIN, snap(o.w + dx, free));
-    if (d.includes('s')) p.h = Math.max(MIN, snap(o.h + dy, free));
-    if (d.includes('w')) { const nx = Math.min(o.x + o.w - MIN, snap(o.x + dx, free)); p.w = o.w + (o.x - nx); p.x = nx; }
-    if (d.includes('n')) { const ny = Math.max(0, Math.min(o.y + o.h - MIN, snap(o.y + dy, free))); p.h = o.h + (o.y - ny); p.y = ny; }
+    op.guides = guides;
+    op.same = same;
   }
 
   function end(e) {
     if (!op) return;
     const cur = op;
     op = null;
+    if (cur.mode === 'pending') return toggleSel(cur.zone, cur.index);
     if (cur.mode === 'box') return finishBox(cur);
     if (!cur.moved) return;
     const { zone, mode } = cur;
@@ -200,10 +256,12 @@
 {#snippet zone(name, list)}
   {#each list as p, i (p.card + ':' + i)}
     {@const card = app.config.cards[p.card]}
+    {@const k = name === 'sidebar' ? 1 : kx}
+    {@const pw = Math.round(p.w * k)}
     {#if card}
       <div class="place" class:sel={inSel(name, i)} class:primary={isPrimary(name, i) && sel.size === 1} class:grouped={app.editing && p.group}
-        style="left:{p.x}px;top:{p.y}px;width:{p.w}px;height:{p.h}px;z-index:{(p.z || 0) + (op && inSel(name, i) ? 1000 : isPrimary(name, i) ? 500 : 0)}">
-        <CardFrame {card} w={p.w} h={p.h} editing={app.editing} />
+        style="left:{Math.round(p.x * k)}px;top:{p.y}px;width:{pw}px;height:{p.h}px;z-index:{(p.z || 0) + (op && inSel(name, i) ? 1000 : isPrimary(name, i) ? 500 : 0)}">
+        <CardFrame {card} w={pw} h={p.h} editing={app.editing} />
         {#if app.editing}
           <div class="grab" role="button" tabindex="-1" ondblclick={() => dbl(name, i)}
             onpointerdown={(e) => begin(e, name, i, 'move')} onpointermove={move} onpointerup={end} onpointercancel={end}></div>
@@ -229,6 +287,12 @@
     <div class="selbox" style="left:{selBox.x - 6}px;top:{selBox.y - 6}px;width:{selBox.w + 12}px;height:{selBox.h + 12}px">
       <span>{sel.size} cards{list[app.selected.index]?.group && app.multi.length < 2 ? ' · group' : ''}</span>
     </div>
+  {/if}
+  {#if op?.zone === name && op.guides?.length}
+    {#each op.guides as g}<div class="guide" class:gx={g.x != null} style={g.x != null ? `left:${g.x}px` : `top:${g.y}px`}></div>{/each}
+  {/if}
+  {#if op?.zone === name && op.same?.length}
+    {#each op.same as i}{@const q = list[i]}{#if q}<div class="same" style="left:{q.x}px;top:{q.y}px;width:{q.w}px;height:{q.h}px"></div>{/if}{/each}
   {/if}
   {#if op?.mode === 'box' && op.zone === name}
     <div class="band" style="left:{Math.min(op.x1, op.x2)}px;top:{Math.min(op.y1, op.y2)}px;width:{Math.abs(op.x2 - op.x1)}px;height:{Math.abs(op.y2 - op.y1)}px"></div>
@@ -261,6 +325,9 @@
   .editing .main { outline: 1px dashed rgba(122,162,255,.35); outline-offset: -1px; }
   .editing .main::after { content: attr(data-size); position: absolute; right: 8px; bottom: 8px; font-size: 11px; color: var(--muted); pointer-events: none; }
   .place { position: absolute; }
+  .guide { position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid #ff5fa2; z-index: 2000; pointer-events: none; }
+  .guide.gx { top: 0; bottom: 0; left: auto; right: auto; width: 0; height: auto; border-top: 0; border-left: 1px solid #ff5fa2; }
+  .same { position: absolute; z-index: 1999; pointer-events: none; border: 2px dashed #ff5fa2; border-radius: var(--radius); }
   .editing .place:hover { outline: 1px solid rgba(122,162,255,.4); outline-offset: 2px; border-radius: var(--radius); }
   .editing .place.grouped:not(.sel)::after { content: ''; position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; border-radius: 50%; background: rgba(122,162,255,.6); z-index: 3; pointer-events: none; }
   .place.sel { outline: 1px solid rgba(122,162,255,.7) !important; outline-offset: 2px; border-radius: var(--radius); }

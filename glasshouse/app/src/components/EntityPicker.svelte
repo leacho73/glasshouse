@@ -29,7 +29,8 @@
 <div class="ep">
   <input type="text" value={onpick ? q : open ? q : value} {placeholder}
     onfocus={() => { open = true; q = onpick ? q : ''; }}
-    oninput={(e) => (q = e.currentTarget.value)}
+    onclick={() => (open = true)}
+    oninput={(e) => { q = e.currentTarget.value; open = true; }}
     onblur={() => setTimeout(() => (open = false), 150)}
     onkeydown={(e) => { if (e.key === 'Enter' && results[0]) pick(results[0].entity_id); if (e.key === 'Enter' && !results[0] && q.includes('.')) pick(q); }} />
   {#if open && results.length}

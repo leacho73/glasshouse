@@ -5,6 +5,8 @@ Put any card anywhere, make it any size, style it any way — and run it on a wa
 
 <p align="center"><img src="docs/screenshots/home.webp" alt="Glasshouse on a wall tablet" width="900"></p>
 
+<p align="center"><a href="docs/demo.mp4"><img src="docs/screenshots/demo.webp" alt="Watch the demo video" width="640"></a><br><sub>▶ <a href="docs/demo.mp4">Watch the 1¾-minute demo</a>: lights, thermostat, music, the energy cards, Predbat and editing in the browser.</sub></p>
+
 ---
 
 ## Why Glasshouse?
@@ -40,7 +42,12 @@ First-class cards for UK energy setups, with entities **auto-detected** when you
 | **Zappi / Eddi** | Status, charge-mode buttons, boosts (myenergi) |
 | **Electric vehicle** | Battery vs target, range, charging, plug / lock / climate (Audi, VW, Renault and similar integrations) |
 
-Built for the [Octopus Energy](https://github.com/BottlecapDave/HomeAssistant-OctopusEnergy) and [myenergi](https://github.com/CJNE/ha-myenergi) integrations. Every card lets you show or hide each of its sections.
+<table><tr>
+<td width="50%"><img src="docs/screenshots/predbat.webp" alt="Predbat card"><br><sub><b>Predbat</b>: what it's doing now, the next 24 hours of charge / export slots with predicted battery %, costs, and Charge / Export / Hold buttons.</sub></td>
+<td width="50%"><img src="docs/screenshots/battery.webp" alt="Home battery card"><br><sub><b>Home battery</b>: charge, kWh left, charging power, time until full or until your backup reserve, health, temperature and a 24-hour graph.</sub></td>
+</tr></table>
+
+Built for the [Octopus Energy](https://github.com/BottlecapDave/HomeAssistant-OctopusEnergy), [myenergi](https://github.com/CJNE/ha-myenergi), [Predbat](https://github.com/springfall2008/batpred) and SolarEdge Modbus Multi integrations. Every card lets you show or hide each of its sections.
 
 ## Edit in the browser
 
@@ -100,4 +107,4 @@ export const meta = {
 
 Use `t()` / `ent()` from `lib/tpl.js` so every setting can be a template. Release by bumping `version` in `glasshouse/config.yaml` and adding a `CHANGELOG.md` entry.
 
-*Screenshots use a demo house with made-up entities.*
+*Screenshots and the demo video use a demo house with made-up entities.*

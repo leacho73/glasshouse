@@ -30,7 +30,9 @@
   .nav { height: 100%; display: flex; flex-direction: column; gap: 4px; overflow: auto; }
   .horizontal { flex-direction: row; align-items: center; }
   button { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; border: 0; background: none; color: var(--muted); font: inherit; font-weight: 500; text-align: left; white-space: nowrap; transition: all .2s; }
-  .horizontal button { flex: 1; justify-content: center; }
+  .horizontal { gap: 2px; }
+  .horizontal button { flex: 1 1 0; min-width: 0; justify-content: center; gap: 6px; padding: 10px 6px; font-size: .9em; }
+  .horizontal button span { overflow: hidden; text-overflow: ellipsis; }
   button.sel { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--text); }
   button.sel :global(svg) { color: var(--accent); }
 </style>

@@ -12,6 +12,7 @@
       { key: 'layout', label: 'Layout', type: 'select', options: ['vertical', 'horizontal', 'icon'] },
       { key: 'active', label: 'Active (template, overrides)', type: 'text' },
       { key: 'active_color', label: 'Active colour', type: 'color' },
+      { key: 'icon_color', label: 'Icon colour (always, template ok)', type: 'color' },
     ],
   };
 </script>
@@ -22,16 +23,18 @@
   import { name, stateText, entityIcon, isActive, lightColor } from '../lib/entity.js';
   let { props } = $props();
   const e = $derived(ent(props.entity));
-  const on = $derived(props.active ? truthy(t(props.active)) : isActive(e));
-  const color = $derived(t(props.active_color) || lightColor(e) || 'var(--on)');
+  const v = $derived({ entity_id: props.entity });
+  const on = $derived(props.active ? truthy(t(props.active, v)) : isActive(e));
+  const iconColor = $derived(String(t(props.icon_color, v) || '').trim());
+  const color = $derived(iconColor || t(props.active_color, v) || lightColor(e) || 'var(--on)');
 </script>
 
-<div class="btn {props.layout}" class:on style="--ac:{color}">
-  <div class="ic"><Icon icon={t(props.icon) || entityIcon(e)} size={props.layout === 'icon' ? '2.4em' : '1.6em'} /></div>
+<div class="btn {props.layout}" class:on class:tinted={!!iconColor} style="--ac:{color}">
+  <div class="ic"><Icon icon={String(t(props.icon, v) || '').trim() || entityIcon(e)} size={props.layout === 'icon' ? '2.4em' : '1.6em'} /></div>
   {#if props.layout !== 'icon'}
     <div class="txt">
-      <div class="name">{t(props.name) || name(e)}</div>
-      {#if props.show_state !== false}<div class="state">{t(props.state) || stateText(e)}</div>{/if}
+      <div class="name">{String(t(props.name, v) || '').trim() || name(e)}</div>
+      {#if props.show_state !== false}<div class="state">{String(t(props.state, v) || '').trim() || stateText(e)}</div>{/if}
     </div>
   {/if}
 </div>
@@ -42,6 +45,7 @@
   .btn.icon { align-items: center; justify-content: center; }
   .ic { width: 2.6em; height: 2.6em; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.08); color: var(--muted); transition: all .25s; flex: none; }
   .icon .ic { width: auto; height: auto; background: none; }
+  .tinted .ic { color: var(--ac); }
   .on .ic { background: color-mix(in srgb, var(--ac) 22%, transparent); color: var(--ac); }
   .icon.on .ic { background: none; }
   .txt { min-width: 0; }

@@ -7,6 +7,26 @@
     duplicateSelected, copyLayout, importConfig, addView, removeView, setView, isPlacedAnywhere, placeExisting, zoneWidth,
   } from '../lib/config.svelte.js';
 
+  import { fromFusion } from '../lib/fusion.js';
+  import { toast } from '../lib/ha.svelte.js';
+  let importing = $state(false);
+  async function importFusion() {
+    if (!confirm('Replace this dashboard with one built from ha-fusion?')) return;
+    importing = true;
+    try {
+      const r = await fetch('api/fusion');
+      const db = await r.json();
+      if (!r.ok) throw new Error(db.error || 'Could not read ha-fusion');
+      importConfig(fromFusion(db));
+      app.view = app.config.views[0].id;
+      toast('Imported from ha-fusion');
+    } catch (e) {
+      toast(e.message);
+    } finally {
+      importing = false;
+    }
+  }
+
   const card = $derived(selectedCard());
   const place = $derived(selectedPlacement());
   const def = $derived(card && cards[card.type]);
@@ -154,6 +174,9 @@
           <button class="sm" onclick={() => confirm(`Replace the ${DEVICES[app.device].label} layout with a copy of ${d.label}?`) && copyLayout(k)}>{d.label}</button>
         {/each}
       </div>
+      <h4>Import</h4>
+      <button class="sm" disabled={importing} onclick={importFusion}><Icon icon="mdi:import" size="1em" /> {importing ? 'Importing…' : 'Import from ha-fusion'}</button>
+      <p class="hint">Rebuilds all three device layouts from your ha-fusion dashboard (rooms, buttons with their templates, cameras, sidebar) and adds an Energy view. Replaces the current dashboard — export first if you want a backup.</p>
       <h4>Backup</h4>
       <div class="row">
         <button class="sm" onclick={() => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify($state.snapshot(app.config), null, 2)])); a.download = 'dashboard.json'; a.click(); }}>Export</button>

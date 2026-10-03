@@ -7,6 +7,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { WebSocketServer, WebSocket } from 'ws';
 import * as mdi from '@mdi/js';
+import { fusionDashboard } from './fusion.js';
 
 const PORT = Number(process.env.PORT || 8099);
 const SUP = process.env.SUPERVISOR_TOKEN;
@@ -65,6 +66,9 @@ const server = http.createServer(async (req, res) => {
     if (p === '/api/icon-names') {
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=86400' });
       return res.end(JSON.stringify(Object.keys(mdi).map((k) => 'mdi:' + k.slice(3).replace(/([a-z0-9])([A-Z0-9])/g, '$1-$2').toLowerCase())));
+    }
+    if (p === '/api/fusion') {
+      return send(res, 200, JSON.stringify(await fusionDashboard({ sup: SUP, haUrl: HA_URL, token: TOKEN })));
     }
     if (p.startsWith('/ha/')) {
       // Proxy HA image endpoints (camera_proxy, media_player_proxy, local files).

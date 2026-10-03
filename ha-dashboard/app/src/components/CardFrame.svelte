@@ -10,29 +10,30 @@
   let { card, w, h, editing = false, inPopup = false } = $props();
   const def = $derived(cards[card.type]);
   const s = $derived(card.style || {});
-  const visible = $derived(!card.visible || truthy(t(card.visible)));
+  const vars = $derived({ entity_id: card.props?.entity });
+  const visible = $derived(!card.visible || truthy(t(card.visible, vars)));
 
   const px = (v) => (v === '' || v == null ? null : /^-?\d+(\.\d+)?$/.test(String(v)) ? v + 'px' : v);
   const style = $derived.by(() => {
     const out = [];
     const add = (k, v) => v != null && v !== '' && out.push(`${k}:${v}`);
-    add('--card-bg', t(s.background));
-    add('color', t(s.color));
-    add('--accent', t(s.accent));
-    add('--on', t(s.accent));
-    add('--radius', px(t(s.radius)));
-    add('--pad', px(t(s.padding)));
-    add('--card-border', t(s.border));
-    add('--card-shadow', t(s.shadow));
-    add('--blur', px(t(s.blur)));
-    add('opacity', t(s.opacity));
-    add('font-family', t(s.font));
-    add('font-size', px(t(s.fontSize)));
-    add('font-weight', t(s.fontWeight));
-    add('text-align', t(s.align));
-    const img = t(s.backgroundImage);
+    add('--card-bg', t(s.background, vars));
+    add('color', t(s.color, vars));
+    add('--accent', t(s.accent, vars));
+    add('--on', t(s.accent, vars));
+    add('--radius', px(t(s.radius, vars)));
+    add('--pad', px(t(s.padding, vars)));
+    add('--card-border', t(s.border, vars));
+    add('--card-shadow', t(s.shadow, vars));
+    add('--blur', px(t(s.blur, vars)));
+    add('opacity', t(s.opacity, vars));
+    add('font-family', t(s.font, vars));
+    add('font-size', px(t(s.fontSize, vars)));
+    add('font-weight', t(s.fontWeight, vars));
+    add('text-align', t(s.align, vars));
+    const img = t(s.backgroundImage, vars);
     if (img) add('background-image', img.startsWith('url(') || img.includes('gradient(') ? img : `url('${img}')`);
-    if (s.css) out.push(t(s.css));
+    if (s.css) out.push(t(s.css, vars));
     return out.join(';');
   });
 

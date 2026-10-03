@@ -119,16 +119,19 @@ export function watchEntities(ids) {
 // ---- templates ----
 const tplSubs = new Set();
 /** Live-rendered HA template result (reactive). Subscribes on first use. */
-export function renderTemplate(tpl) {
-  if (!tplSubs.has(tpl)) {
-    tplSubs.add(tpl);
+export function renderTemplate(tpl, variables) {
+  const key = variables ? tpl + '\u0000' + JSON.stringify(variables) : tpl;
+  if (!tplSubs.has(key)) {
+    tplSubs.add(key);
+    const msg = { type: 'render_template', template: tpl, report_errors: true };
+    if (variables) msg.variables = variables;
     queueMicrotask(() =>
-      subscribe({ type: 'render_template', template: tpl, report_errors: true }, (ev) => {
-        templates.set(tpl, ev.error ? `⚠ ${ev.error}` : ev.result);
+      subscribe(msg, (ev) => {
+        templates.set(key, ev.error ? `⚠ ${ev.error}` : ev.result);
       }),
     );
   }
-  return templates.get(tpl);
+  return templates.get(key);
 }
 
 export function callService(domain, service, data = {}, target) {

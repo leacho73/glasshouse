@@ -14,7 +14,7 @@
       { key: 'name', label: 'Name', type: 'text' },
       { key: 'soc', label: 'Battery %', type: 'entity', domain: 'sensor' },
       { key: 'range', label: 'Range', type: 'entity', domain: 'sensor' },
-      { key: 'target', label: 'Target %', type: 'entity', domain: 'sensor' },
+      { key: 'target', label: 'Target %', type: 'entity', domain: ['sensor', 'number'] },
       { key: 'charging', label: 'Charging state', type: 'entity', domain: 'sensor' },
       { key: 'power', label: 'Charging power', type: 'entity', domain: 'sensor' },
       { key: 'remaining', label: 'Remaining charge time', type: 'entity', domain: 'sensor' },

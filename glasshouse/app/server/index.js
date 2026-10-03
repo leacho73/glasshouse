@@ -108,7 +108,50 @@ function broadcast(msg) {
 }
 setInterval(() => broadcast({ type: 'ping' }), 30000);
 
+// Live camera: MJPEG frames from HA sent over a websocket. Browsers only allow
+// ~6 HTTP connections per host, so a few <img> MJPEG streams would starve
+// everything else (streams freeze, switching camera never loads).
+const cams = new WebSocketServer({ noServer: true });
+const SOI = Buffer.from([0xff, 0xd8]), EOI = Buffer.from([0xff, 0xd9]);
+async function camStream(ws, entity) {
+  const ac = new AbortController();
+  ws.on('close', () => ac.abort());
+  ws.on('error', () => ac.abort());
+  try {
+    const r = await fetch(`${HA_URL}/api/camera_proxy_stream/${encodeURIComponent(entity)}`, { headers: { Authorization: `Bearer ${TOKEN}` }, signal: ac.signal });
+    if (!r.ok || !r.body) throw new Error('HTTP ' + r.status);
+    let buf = Buffer.alloc(0);
+    for await (const chunk of r.body) {
+      buf = buf.length ? Buffer.concat([buf, chunk]) : Buffer.from(chunk);
+      // Pull out complete JPEGs (by the part's Content-Length, else SOI..EOI);
+      // send only the newest, and skip frames while the browser is behind.
+      let frame = null;
+      for (;;) {
+        const s = buf.indexOf(SOI);
+        if (s < 0) { buf = buf.subarray(Math.max(0, buf.length - 1)); break; }
+        const len = Number([...buf.subarray(Math.max(0, s - 400), s).toString('latin1').matchAll(/content-length:\s*(\d+)/gi)].pop()?.[1]);
+        let end;
+        if (len > 0) end = buf.length >= s + len ? s + len : -1;
+        else { const e = buf.indexOf(EOI, s + 2); end = e < 0 ? -1 : e + 2; }
+        if (end < 0) break;
+        frame = buf.subarray(s, end);
+        buf = buf.subarray(end);
+      }
+      if (buf.length > 8e6) buf = Buffer.alloc(0);
+      if (frame && ws.readyState === WebSocket.OPEN && ws.bufferedAmount < 1e6) ws.send(Buffer.from(frame), { binary: true });
+    }
+  } catch (e) {
+    if (!ac.signal.aborted) console.error('camera', entity, e.message);
+  }
+  ws.close();
+}
+
 server.on('upgrade', (req, socket, head) => {
+  if (req.url.split('?')[0].endsWith('/api/camera')) {
+    const entity = new URL(req.url, 'http://x').searchParams.get('entity') || '';
+    if (!/^camera\.[a-z0-9_]+$/.test(entity)) return socket.destroy();
+    return cams.handleUpgrade(req, socket, head, (ws) => camStream(ws, entity));
+  }
   if (req.url.split('?')[0].endsWith('/api/live')) {
     return live.handleUpgrade(req, socket, head, (ws) => ws.send(JSON.stringify({ type: 'hello', build: BUILD })));
   }

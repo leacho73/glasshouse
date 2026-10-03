@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.0
+
+- **Home battery card** (Add → Energy): charge %, kWh left of usable capacity, charging / discharging power, time until full or until your backup reserve (with clock time), status, health, temperature, today's in / out and a 24-hour charge graph. SolarEdge batteries are detected automatically; any other battery can be picked by hand. Wide cards put the graph alongside. Also added to the ha-fusion import's Energy view.
+- **Camera fixes**: live cameras now stream over a websocket instead of a long-running image request. Browsers only allow a handful of those at once, so live cameras used to freeze after a while, and choosing a different camera changed the name but not the picture. Streams also reconnect themselves if they drop and pause while the screen is off.
+
 ## 0.11.1
 
 - Phone layout: small cards that sit side by side on the main layout (e.g. two thermostats) now pair up two-per-row on phones instead of stacking at half width.

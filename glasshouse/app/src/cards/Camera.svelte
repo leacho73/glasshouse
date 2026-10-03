@@ -20,27 +20,70 @@
   import { haImage } from '../lib/ha.svelte.js';
   let { props } = $props();
   const e = $derived(ent(props.entity));
+  // Just the id, so attribute updates (e.g. the rotating access token) don't restart streams.
+  const camId = $derived(e?.entity_id.startsWith('camera.') ? e.entity_id : null);
+  const live = $derived(props.mode === 'live' && !!camId);
   let tick = $state(0);
+  let shown = $state('');
+  // Snapshots: poll, double-buffered so the picture never flashes blank.
   $effect(() => {
-    if (props.mode === 'live') return;
+    if (live) return;
     const i = setInterval(() => document.visibilityState === 'visible' && tick++, Math.max(1, Number(props.refresh) || 5) * 1000);
     return () => clearInterval(i);
   });
-  const token = $derived(e?.attributes.access_token);
   const src = $derived.by(() => {
     if (!e) return '';
     if (e.entity_id.startsWith('image.')) return haImage(e.attributes.entity_picture);
-    if (props.mode === 'live') return `ha/api/camera_proxy_stream/${e.entity_id}?token=${token}`;
-    return `ha/api/camera_proxy/${e.entity_id}?token=${token}&t=${tick}`;
+    return `ha/api/camera_proxy/${e.entity_id}?t=${tick}`;
   });
-  // Double-buffer snapshots so the image never flashes blank while loading.
-  let shown = $state('');
   $effect(() => {
     const s = src;
-    if (!s || props.mode === 'live') return void (shown = s);
+    if (!s || live) return;
     const img = new Image();
     img.onload = () => (shown = s);
     img.src = s;
+    return () => (img.onload = null);
+  });
+  // Live: JPEG frames over a websocket (see server camStream), reconnecting if
+  // the stream drops and pausing while the screen is hidden.
+  $effect(() => {
+    if (!live) return;
+    const id = camId;
+    const base = location.pathname.replace(/[^/]*$/, '');
+    const url = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}${base}api/camera?entity=${encodeURIComponent(id)}`;
+    let ws, timer, url0 = '', stopped = false, backoff = 1000;
+    shown = `ha/api/camera_proxy/${id}?t=${Date.now()}`;
+    const open = () => {
+      if (stopped || document.visibilityState !== 'visible') return;
+      ws = new WebSocket(url);
+      ws.binaryType = 'blob';
+      ws.onmessage = (ev) => {
+        backoff = 1000;
+        const u = URL.createObjectURL(new Blob([ev.data], { type: 'image/jpeg' }));
+        shown = u;
+        if (url0) URL.revokeObjectURL(url0);
+        url0 = u;
+      };
+      ws.onclose = () => {
+        ws = null;
+        if (stopped) return;
+        timer = setTimeout(open, backoff);
+        backoff = Math.min(backoff * 2, 15000);
+      };
+    };
+    const vis = () => {
+      if (document.visibilityState === 'visible') { if (!ws) { clearTimeout(timer); open(); } }
+      else if (ws) { ws.onclose = null; ws.close(); ws = null; }
+    };
+    document.addEventListener('visibilitychange', vis);
+    open();
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', vis);
+      if (ws) { ws.onclose = null; ws.close(); }
+      if (url0) setTimeout(() => URL.revokeObjectURL(url0), 1000);
+    };
   });
 </script>
 

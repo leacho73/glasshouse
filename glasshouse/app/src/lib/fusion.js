@@ -180,6 +180,7 @@ function addEnergy(cfg, add) {
   if (has('octopus-intelligent', 'dispatching')) items.push(['octopus-intelligent', card('octopus-intelligent'), 1, 380]);
   if (has('energy-today', 'cost')) items.push(['energy-today', card('energy-today'), 1, 300]);
   if (has('heatpump', 'power_in')) items.push(['heatpump', card('heatpump'), 1, 300]);
+  if (has('battery', 'soc')) items.push(['battery', card('battery'), 1, 260]);
   if (has('myenergi', 'mode')) items.push(['myenergi', card('myenergi'), 1, 230]);
   const evName = (p) => p.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   for (const id of states.keys()) {

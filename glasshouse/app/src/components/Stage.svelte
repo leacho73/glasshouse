@@ -170,6 +170,13 @@
   }
 
   const HANDLES = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
+
+  /** Scale everything inside a card (text, buttons, toggles…) without changing its box. */
+  function setScale(card, v) {
+    card.style.scale = Math.min(250, Math.max(40, v));
+    if (card.style.scale === 100) delete card.style.scale;
+    changed();
+  }
 </script>
 
 <svelte:window bind:innerHeight={vh} bind:scrollY />
@@ -179,7 +186,7 @@
     {@const card = app.config.cards[p.card]}
     {#if card}
       <div class="place" class:sel={inSel(name, i)} class:primary={isPrimary(name, i) && sel.size === 1} class:grouped={app.editing && p.group}
-        style="left:{p.x}px;top:{p.y}px;width:{p.w}px;height:{p.h}px;z-index:{(p.z || 0) + (op && inSel(name, i) ? 1000 : 0)}">
+        style="left:{p.x}px;top:{p.y}px;width:{p.w}px;height:{p.h}px;z-index:{(p.z || 0) + (op && inSel(name, i) ? 1000 : isPrimary(name, i) ? 500 : 0)}">
         <CardFrame {card} w={p.w} h={p.h} editing={app.editing} />
         {#if app.editing}
           <div class="grab" role="button" tabindex="-1" ondblclick={() => dbl(name, i)}
@@ -188,6 +195,14 @@
             {#each HANDLES as d}
               <div class="h h-{d}" role="button" tabindex="-1" onpointerdown={(e) => begin(e, name, i, 'resize', d)} onpointermove={move} onpointerup={end} onpointercancel={end}></div>
             {/each}
+            {#if !op}
+              {@const sc = Number(card.style?.scale) || 100}
+              <div class="zoomer" role="toolbar" tabindex="-1" onpointerdown={(e) => e.stopPropagation()}>
+                <button title="Smaller" onclick={() => setScale(card, sc - 10)}>−</button>
+                <span>{sc}%</span>
+                <button title="Bigger" onclick={() => setScale(card, sc + 10)}>+</button>
+              </div>
+            {/if}
             {#if op && op.mode !== 'box'}<div class="size">{p.w} × {p.h}{op.mode === 'move' ? `  @ ${p.x}, ${p.y}` : ''}</div>{/if}
           {/if}
         {/if}
@@ -245,6 +260,10 @@
   .h-nw { top: -13px; left: -13px; cursor: nwse-resize; } .h-se { bottom: -13px; right: -13px; cursor: nwse-resize; }
   .h-ne::after, .h-nw::after, .h-se::after, .h-sw::after { width: 14px; height: 14px; border-radius: 50%; }
   .size { position: absolute; left: 50%; top: -34px; transform: translateX(-50%); background: var(--accent); color: #000; font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 8px; white-space: pre; z-index: 4; pointer-events: none; }
+  .zoomer { position: absolute; right: 0; bottom: -46px; z-index: 5; display: flex; align-items: center; gap: 2px; background: rgba(20,24,36,.96); border: 1px solid rgba(122,162,255,.5); border-radius: 12px; padding: 3px; box-shadow: 0 6px 20px rgba(0,0,0,.4); font-size: 13px; }
+  .zoomer button { width: 30px; height: 28px; border: 0; border-radius: 9px; background: rgba(255,255,255,.08); color: var(--text); font-size: 17px; line-height: 1; }
+  .zoomer button:hover { background: var(--accent); color: #000; }
+  .zoomer span { min-width: 44px; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
   .selbox { position: absolute; border: 2px dashed var(--accent); border-radius: calc(var(--radius) + 6px); pointer-events: none; z-index: 900; }
   .selbox span { position: absolute; top: -26px; left: 0; background: var(--accent); color: #000; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 8px; white-space: nowrap; }
   .band { position: absolute; border: 1px solid var(--accent); background: rgba(122,162,255,.12); z-index: 950; pointer-events: none; }

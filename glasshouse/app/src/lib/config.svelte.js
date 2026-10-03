@@ -28,6 +28,7 @@ export const DEFAULT_THEME = {
   cardBlur: 18,
   cardShadow: '0 8px 30px rgba(0,0,0,.25)',
   cardPadding: 16,
+  cardScale: 100,
   sidebarBg: 'rgba(255,255,255,.03)',
   customCss: '',
 };

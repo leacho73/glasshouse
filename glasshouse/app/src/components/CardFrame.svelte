@@ -11,6 +11,8 @@
   const def = $derived(cards[card.type]);
   const s = $derived(card.style || {});
   const vars = $derived({ entity_id: card.props?.entity });
+  // Content size: dashboard-wide card size × this card's own size (both %).
+  const z = $derived(((Number(app.config.theme.cardScale) || 100) / 100) * ((Number(s.scale) || 100) / 100));
   const visible = $derived(!card.visible || truthy(t(card.visible, vars)));
 
   const px = (v) => (v === '' || v == null ? null : /^-?\d+(\.\d+)?$/.test(String(v)) ? v + 'px' : v);
@@ -82,18 +84,20 @@
 {#if visible || editing}
   <div role="presentation" class="card {card.type}" class:tappable class:hidden={!visible} class:popup={inPopup} {style}
     onpointerdown={down} onpointermove={move} onpointerup={up} onpointercancel={() => clearTimeout(holdTimer)}>
-    {#if def}
-      <def.component props={card.props || {}} {card} {w} {h} {editing} />
-    {:else}
-      <div class="missing">Unknown card “{card.type}”</div>
-    {/if}
+    <div class="content" style="zoom:{z};{inPopup ? 'width:100%;height:100%' : `width:${w / z}px;height:${h / z}px`}">
+      {#if def}
+        <def.component props={card.props || {}} {card} w={w / z} h={h / z} {editing} />
+      {:else}
+        <div class="missing">Unknown card “{card.type}”</div>
+      {/if}
+    </div>
   </div>
 {/if}
 
 <style>
   .card {
     position: absolute; inset: 0; overflow: hidden; box-sizing: border-box;
-    padding: var(--pad); border-radius: var(--radius);
+    border-radius: var(--radius);
     background: var(--card-bg); border: var(--card-border); box-shadow: var(--card-shadow);
     backdrop-filter: blur(var(--blur)) saturate(1.3); -webkit-backdrop-filter: blur(var(--blur)) saturate(1.3);
     background-size: cover; background-position: center;
@@ -101,6 +105,7 @@
     user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
     contain: layout paint;
   }
+  .content { position: relative; box-sizing: border-box; padding: var(--pad); border-radius: inherit; }
   .card.popup { position: relative; inset: auto; height: 100%; }
   .tappable { cursor: pointer; }
   .tappable:active { transform: scale(.97); }

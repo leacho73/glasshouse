@@ -48,6 +48,7 @@
     { key: 'fontSize', label: 'Font size', type: 'text', placeholder: '16' },
     { key: 'fontWeight', label: 'Font weight', type: 'select', options: ['', '300', '400', '500', '600', '700'] },
     { key: 'align', label: 'Text align', type: 'select', options: ['', 'left', 'center', 'right'] },
+    { key: 'scale', label: 'Content size % (text, buttons, everything — also the −/+ under the card)', type: 'number' },
     { key: 'css', label: 'Custom CSS (declarations)', type: 'textarea' },
   ];
   const ACTIONS = ['default', 'toggle', 'more-info', 'popup', 'navigate', 'service', 'url', 'none'];
@@ -70,6 +71,7 @@
     { key: 'cardShadow', label: 'Card shadow', type: 'text' },
     { key: 'cardRadius', label: 'Card radius', type: 'number' },
     { key: 'cardPadding', label: 'Card padding', type: 'number' },
+    { key: 'cardScale', label: 'Card content size % (all cards)', type: 'number' },
     { key: 'cardBlur', label: 'Card blur (0 = fastest)', type: 'number' },
     { key: 'font', label: 'Font family', type: 'text' },
     { key: 'fontUrl', label: 'Font stylesheet URL (e.g. Google Fonts)', type: 'text' },

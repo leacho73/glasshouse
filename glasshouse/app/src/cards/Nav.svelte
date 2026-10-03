@@ -14,10 +14,12 @@
 <script>
   import Icon from '../components/Icon.svelte';
   import { app, setView } from '../lib/config.svelte.js';
-  let { props } = $props();
+  let { props, w = 0, h = 0 } = $props();
+  // A wide, short nav card lays out horizontally whatever its setting (e.g. on phones).
+  const dir = $derived(w > h * 3 ? 'horizontal' : props.direction);
 </script>
 
-<nav class="nav {props.direction}" data-stop>
+<nav class="nav {dir}" data-stop>
   {#each app.config.views as v}
     <button class:sel={app.view === v.id} onclick={() => setView(v.id)}>
       {#if props.show_icons !== false}<Icon icon={v.icon} size="1.3em" />{/if}

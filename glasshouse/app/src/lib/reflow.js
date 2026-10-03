@@ -12,7 +12,9 @@ export function reflow(master, width, views, cards) {
   const type = (p) => cards[p.card]?.type;
   const side = master.sidebar.enabled ? master.zones.sidebar || [] : [];
   const navs = side.filter((p) => type(p) === 'nav');
-  const rest = side.filter((p) => type(p) !== 'nav');
+  const TEXT = new Set(['textlist', 'markdown', 'entities']);
+  const top = side.filter((p) => type(p) !== 'nav' && !TEXT.has(type(p)));
+  const rest = side.filter((p) => TEXT.has(type(p)));
   const zones = { sidebar: [] };
 
   views.forEach((v, vi) => {
@@ -41,6 +43,7 @@ export function reflow(master, width, views, cards) {
       if (pending) y = pending.y + pending.h + GAP;
     };
     place(navs.map((p) => ({ ...p, h: 56 })), W);
+    if (vi === 0) place(top.map((p) => ({ ...p, w: Math.max(p.w, W) })), W);
     for (const block of blocks(master.zones[v.id] || [])) {
       place(block, mainW);
       y += 6;

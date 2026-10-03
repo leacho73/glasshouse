@@ -9,7 +9,7 @@
 
   let vw = $state(innerWidth);
   const autoDevice = detectDevice();
-  const panelOpen = $derived(app.editing && vw > 760);
+  const panelOpen = $derived(app.editing && !!app.panel && vw > 760);
   const available = $derived(vw - (panelOpen ? 360 : 0));
 
   load();

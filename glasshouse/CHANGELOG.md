@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.0
+
+- **Card size −/+**: select a card in edit mode and use the −/+ under it to make everything inside it (text, buttons, toggles, sliders) smaller or bigger without changing the card's box. Also in Style → Content size.
+- **Card content size for all cards** in Theme, to shrink or grow every card at once.
+- Toggles and sliders now scale with the card's font size instead of staying a fixed size.
+- Fixed: with the edit panel hidden, the dashboard still left space for it and didn't use the full screen width.
+- Phone: navigation sits across the top of every view, followed by the clock / weather from the sidebar; text blocks go to the bottom.
+
 ## 0.6.1
 
 - Edit mode now scales the layout to fill the screen (like view mode), so cards can be dragged all the way to the right on wide screens.

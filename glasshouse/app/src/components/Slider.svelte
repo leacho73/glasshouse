@@ -28,7 +28,7 @@
 </script>
 
 <div bind:this={el} class="slider" class:vertical class:disabled data-stop role="slider" aria-valuenow={shown} aria-valuemin={min} aria-valuemax={max} tabindex="-1"
-  style="--c:{color};--h:{height}px" onpointerdown={down} onpointermove={move} onpointerup={up} onpointercancel={up}>
+  style="--c:{color};--h:{height / 16}em" onpointerdown={down} onpointermove={move} onpointerup={up} onpointercancel={up}>
   <div class="fill" style={vertical ? `height:${pct}%` : `width:${pct}%`}></div>
   {#if label}<span class="lbl">{label}</span>{/if}
 </div>

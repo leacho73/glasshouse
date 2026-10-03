@@ -35,6 +35,7 @@ First-class cards for UK energy setups, with entities **auto-detected** when you
 | **Energy cost today** | Cost, kWh, average p/kWh, export, solar, yesterday, peak/off-peak split, half-hourly usage coloured by rate |
 | **Power flow** | Solar, grid, battery, home and EV with animated flows |
 | **Home battery** | Charge %, kWh left, charge / discharge power, time to full or to reserve, health, today in / out (SolarEdge auto-detected) |
+| **Predbat** | What Predbat is doing, the 24-hour charge / export plan with predicted battery %, costs and savings, Charge / Export / Hold now |
 | **Heat pump** | Live COP / SCOP, power in and heat out, flow and outdoor temperature, hot water with Boost |
 | **Zappi / Eddi** | Status, charge-mode buttons, boosts (myenergi) |
 | **Electric vehicle** | Battery vs target, range, charging, plug / lock / climate (Audi, VW, Renault and similar integrations) |

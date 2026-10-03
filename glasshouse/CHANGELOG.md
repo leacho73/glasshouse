@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.0
+
+- **Predbat card** (Add → Energy): what Predbat is doing now and until when, battery %, cost today, cost of the rest of the plan and yesterday's savings. A 24-hour plan chart shows charge (green) and export (yellow) windows, predicted battery %, car charging and import rates, followed by a list of the next charge / export slots. Charge / Export / Hold buttons force that for the current half-hour, and there's a Predbat mode picker. Predbat's own plan summary can be shown too. Entities are detected automatically, and the card is added to the ha-fusion import's Energy view.
+
 ## 0.13.0
 
 - **Smart alignment** while editing: dragged or resized cards snap to the edges of other cards, with pink guide lines showing what lined up. Resizing also snaps to the same height or width as other cards (they're outlined while it matches).

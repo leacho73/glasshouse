@@ -16,8 +16,19 @@
   const L = $derived(layout());
   const sb = $derived(L.sidebar.enabled ? L.sidebar.width : 0);
   const fit = $derived(available / L.width);
-  // Fill the width like view mode does; only a phone-sized preview on a big screen is capped at 100%.
-  const scale = $derived(L.width < 700 && app.device !== autoDevice ? Math.min(fit, 1) : fit);
+  // Sizing per device (Layout tab, or ?fit=width|screen|actual in the URL):
+  // fill the width, fit the whole view on screen (wall tablets), or actual size.
+  const display = $derived(new URLSearchParams(location.search).get('fit') || app.config.layouts[app.device]?.display || 'width');
+  const contentH = $derived(Math.max(
+    (L.zones[app.view] || []).reduce((m, p) => Math.max(m, p.y + p.h), 0),
+    sb ? (L.zones.sidebar || []).reduce((m, p) => Math.max(m, p.y + p.h), 0) : 0,
+  ) + 20);
+  const scale = $derived.by(() => {
+    if (L.width < 700 && app.device !== autoDevice) return Math.min(fit, 1); // phone preview on a big screen
+    if (display === 'actual') return Math.min(fit, 1);
+    if (display === 'screen' && !app.editing) return Math.min(fit, vh / contentH);
+    return fit;
+  });
   const left = $derived(Math.max(0, (available - L.width * scale) / 2));
   const mainW = $derived(L.width - sb);
   const origin = (zone) => ({

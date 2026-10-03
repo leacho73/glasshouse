@@ -4,7 +4,7 @@
   import { cards, categories } from '../lib/registry.js';
   import {
     app, layout, DEVICES, DEFAULT_THEME, changed, addCard, selectedCard, selectedPlacement, removeSelected,
-    duplicateSelected, copyLayout, importConfig, selectionSet, groupSelected, ungroupSelected, ensureEditable, setMode, MODES, zoneList, addView, removeView, setView, isPlacedAnywhere, placeExisting, zoneWidth,
+    duplicateSelected, copyLayout, importConfig, selectionSet, groupSelected, ungroupSelected, ensureEditable, setMode, MODES, DISPLAYS, zoneList, addView, removeView, setView, isPlacedAnywhere, placeExisting, zoneWidth,
   } from '../lib/config.svelte.js';
 
   import { fromFusion } from '../lib/fusion.js';
@@ -222,6 +222,9 @@
         </div>
         <p class="hint">{app.config.layouts[app.device].mode === 'custom' ? 'This device has its own layout. Cards added anywhere are still added here too.' : 'Edits here change the main layout' + (app.config.layouts[app.device].mode === 'auto' ? ' — or drag something to start a custom phone layout.' : '.')}</p>
       {/if}
+      <div class="fields">
+        <Field obj={app.config.layouts[app.device]} f={{ key: 'display', label: `Sizing on ${app.device === 'tablet' ? 'tablets' : DEVICES[app.device].label.toLowerCase() + 's'}`, type: 'select', options: Object.entries(DISPLAYS).map(([value, label]) => ({ value, label })) }} />
+      </div>
       {#if app.device === 'tablet' || app.config.layouts[app.device].mode === 'custom'}
         <div class="fields">
           <Field obj={layout()} f={{ key: 'width', label: 'Design width (px) — scaled to fit the screen', type: 'number' }} />

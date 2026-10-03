@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.0
+
+- **Sizing per device** (Layout tab → Sizing):
+  - *Fill the screen width* — scroll down for more (default for tablets and phones).
+  - *Fit the whole view on screen* — shrinks a tall view so nothing needs scrolling; made for wall tablets.
+  - *Actual size, centred* — big monitors show the layout at 100% instead of blowing it up (now the default for desktops).
+- Any screen can be forced with `?fit=width`, `?fit=screen` or `?fit=actual` in its URL.
+
 ## 0.7.0
 
 - **Card size −/+**: select a card in edit mode and use the −/+ under it to make everything inside it (text, buttons, toggles, sliders) smaller or bigger without changing the card's box. Also in Style → Content size.

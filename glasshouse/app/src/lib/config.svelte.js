@@ -7,10 +7,12 @@ import { toast } from './ha.svelte.js';
 import { reflow } from './reflow.js';
 
 export const DEVICES = {
-  tablet: { label: 'Main', width: 1280, sidebar: 300 },
-  phone: { label: 'Phone', width: 420, sidebar: 0, mode: 'auto' },
-  desktop: { label: 'Desktop', width: 1600, sidebar: 320, mode: 'same' },
+  tablet: { label: 'Main', width: 1280, sidebar: 300, display: 'width' },
+  phone: { label: 'Phone', width: 420, sidebar: 0, mode: 'auto', display: 'width' },
+  desktop: { label: 'Desktop', width: 1600, sidebar: 320, mode: 'same', display: 'actual' },
 };
+/** How a layout is sized on the screen. */
+export const DISPLAYS = { width: 'Fill the screen width (scroll down)', screen: 'Fit the whole view on screen (no scrolling — wall tablets)', actual: 'Actual size, centred (big monitors)' };
 export const MODES = { same: 'Same as main (scaled)', auto: 'Automatic (single column)', custom: 'Custom layout' };
 export const GRID = 10;
 
@@ -104,7 +106,7 @@ export function ensureEditable() {
   if (editTarget() !== null) return;
   const l = app.config.layouts[app.device];
   const r = layout();
-  app.config.layouts[app.device] = { ...r, width: l.width, mode: 'custom' };
+  app.config.layouts[app.device] = { ...r, width: l.width, mode: 'custom', display: l.display };
   toast(`${DEVICES[app.device].label} layout is now custom — switch back to automatic in Layout`);
 }
 
@@ -112,9 +114,9 @@ export function setMode(dev, mode) {
   const l = app.config.layouts[dev];
   if (mode === 'custom' && l.mode !== 'custom') {
     const r = $state.snapshot(layout(dev));
-    app.config.layouts[dev] = { ...r, width: l.mode === 'same' ? r.width : l.width, mode: 'custom' };
+    app.config.layouts[dev] = { ...r, width: l.mode === 'same' ? r.width : l.width, mode: 'custom', display: l.display };
   } else {
-    app.config.layouts[dev] = { width: DEVICES[dev].width, mode, sidebar: { enabled: false, side: 'left', width: 300 }, zones: { sidebar: [] } };
+    app.config.layouts[dev] = { width: DEVICES[dev].width, mode, display: l.display, sidebar: { enabled: false, side: 'left', width: 300 }, zones: { sidebar: [] } };
   }
   app.selected = null;
   changed();
@@ -138,6 +140,7 @@ function init(cfg) {
     cfg.layouts[dev] ??= { width: d.width, sidebar: { enabled: false, side: 'left', width: 300 }, zones: { sidebar: [] } };
     cfg.layouts[dev].zones.sidebar ??= [];
     if (dev !== 'tablet') cfg.layouts[dev].mode ??= d.mode;
+    cfg.layouts[dev].display ??= d.display;
   }
   cfg.theme = { ...DEFAULT_THEME, ...cfg.theme };
   for (const c of Object.values(cfg.cards)) normalise(c);

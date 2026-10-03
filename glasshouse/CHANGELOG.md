@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.0
+
+- **Energy usage card** (Add → Energy), like Home Assistant's energy dashboard but live: hourly bars of where the house's energy came from (grid, solar, battery) above the line and where spare energy went (export, battery charging) below it. Today's kWh used, from grid, solar, exported and self-sufficiency, plus **cost, earnings and net** from HA's own cost statistics. A dotted line shows the price paid per kWh each hour, and the header shows what the house is using right now and the current import / export price. Tap an hour for its breakdown and cost. Sources and prices come from Home Assistant's Energy settings; HA's 5-minute statistics are read every minute and the current hour is topped up live from your power sensors in between. Today or yesterday.
+
 ## 0.16.2
 
 - Fixed: the Zappi / Eddi card and the power flow's EV figure used the myenergi hub's "power charging" sensor, which adds up every Zappi and Eddi (e.g. a 7 kW car charge plus a 3 kW immersion showed as 10 kW). They now use each device's own reading. Existing cards correct themselves; nothing to change.

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.0
+
+- **Kiosk mode**: hide Home Assistant's header bar above the dashboard. Turn it on per device in Layout ("Hide Home Assistant's header bar"), or add `?kiosk` to a screen's URL (`?kiosk=0` turns it off).
+
 ## 0.8.0
 
 - **Sizing per device** (Layout tab → Sizing):

@@ -223,6 +223,7 @@
         <p class="hint">{app.config.layouts[app.device].mode === 'custom' ? 'This device has its own layout. Cards added anywhere are still added here too.' : 'Edits here change the main layout' + (app.config.layouts[app.device].mode === 'auto' ? ' — or drag something to start a custom phone layout.' : '.')}</p>
       {/if}
       <div class="fields">
+        <Field obj={app.config.layouts[app.device]} f={{ key: 'kiosk', label: `Hide Home Assistant's header bar on ${app.device === 'tablet' ? 'tablets' : DEVICES[app.device].label.toLowerCase() + 's'}`, type: 'bool' }} />
         <Field obj={app.config.layouts[app.device]} f={{ key: 'display', label: `Sizing on ${app.device === 'tablet' ? 'tablets' : DEVICES[app.device].label.toLowerCase() + 's'}`, type: 'select', options: Object.entries(DISPLAYS).map(([value, label]) => ({ value, label })) }} />
       </div>
       {#if app.device === 'tablet' || app.config.layouts[app.device].mode === 'custom'}

@@ -6,6 +6,7 @@
   import { app, load, save, layout, DEVICES, detectDevice, setView, removeSelected, duplicateSelected, selectedPlacement, changed, undo, undoLast, selectionSet, ensureEditable, zoneList, groupSelected } from './lib/config.svelte.js';
   import { conn, toasts, watchEntities } from './lib/ha.svelte.js';
   import { GRID } from './lib/config.svelte.js';
+  import { setKiosk } from './lib/kiosk.js';
 
   let vw = $state(innerWidth);
   const autoDevice = detectDevice();
@@ -28,6 +29,14 @@
     if (app.popup?.entity) ids.add(app.popup.entity);
     clearTimeout(watchTimer);
     watchTimer = setTimeout(() => watchEntities(ids), 50);
+  });
+
+  // Hide HA's header bar: per device (Layout tab) or ?kiosk / ?kiosk=0 in the URL.
+  const kioskParam = new URLSearchParams(location.search).get('kiosk');
+  $effect(() => {
+    if (!app.config) return;
+    const on = kioskParam != null ? kioskParam !== '0' : !!app.config.layouts[app.device]?.kiosk;
+    setKiosk(on);
   });
 
   const th = $derived(app.config?.theme);

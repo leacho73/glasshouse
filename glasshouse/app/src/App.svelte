@@ -4,7 +4,7 @@
   import Popup from './components/Popup.svelte';
   import Icon from './components/Icon.svelte';
   import { app, load, save, layout, DEVICES, detectDevice, setView, removeSelected, duplicateSelected, selectedPlacement, changed, undo, undoLast, selectionSet, ensureEditable, zoneList, groupSelected } from './lib/config.svelte.js';
-  import { conn, toasts, watchEntities } from './lib/ha.svelte.js';
+  import { conn, toasts, watchEntities, states } from './lib/ha.svelte.js';
   import { GRID } from './lib/config.svelte.js';
   import { setKiosk } from './lib/kiosk.js';
 
@@ -27,6 +27,11 @@
     };
     walk(app.config.cards);
     if (app.popup?.entity) ids.add(app.popup.entity);
+    // Members of light / switch groups, for "3/5 on" counts.
+    for (const id of [...ids]) {
+      const m = states.get(id)?.attributes.entity_id;
+      if (Array.isArray(m)) m.forEach((x) => ids.add(x));
+    }
     clearTimeout(watchTimer);
     watchTimer = setTimeout(() => watchEntities(ids), 50);
   });

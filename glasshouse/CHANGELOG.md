@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.0
+
+- **Thermostat card redesigned**: a dial you can drag to set the temperature (or use −/+), with the current temperature marked on it. The card glows orange when heating, blue when cooling, grey when off, with a pulsing heating/cooling indicator. Labelled mode buttons, plus preset and fan pickers when the device has them. Wide cards put the dial on the left. Water heaters without a target show their current temperature.
+- **Light card redesigned**: glows in the light's actual colour (brighter as it's turned up), big brightness %, a gradient brightness slider, warm / neutral / cool buttons and colour buttons (choose your own colours). Light groups show how many are on, e.g. "9/12 on".
+- Both cards have show/hide sections.
+
 ## 0.9.0
 
 - **Kiosk mode**: hide Home Assistant's header bar above the dashboard. Turn it on per device in Layout ("Hide Home Assistant's header bar"), or add `?kiosk` to a screen's URL (`?kiosk=0` turns it off).

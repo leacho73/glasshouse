@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.2
+
+- Fixed: high-resolution tablets were detected as desktops (they report a wide screen), so they used the desktop's "actual size, centred" setting and showed a gap down each side. Touch-only screens are now always treated as tablets. Layout → Devices shows which device the current screen is using.
+- Thermostat card adapts to its size: when there isn't room for the dial it switches to a compact − temperature + layout, and mode labels only show when they fit.
+
 ## 0.10.1
 
 - Fixed wall-tablet mode (*Fit the whole view on screen*): when a view is shrunk to fit, the sidebar now stays at the screen edge and the main area stretches to fill the full width, instead of the whole dashboard being centred with gaps down both sides.

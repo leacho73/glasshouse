@@ -211,6 +211,7 @@
       {/if}
     {:else if app.panel === 'layout'}
       <h4>Devices</h4>
+      <p class="hint">This screen: {innerWidth}×{innerHeight}, showing <b>{DEVICES[app.device].label === 'Main' ? 'Tablet (main)' : DEVICES[app.device].label}</b>{new URLSearchParams(location.search).get('device') ? ' (set by ?device= in the address)' : ''}.</p>
       <div class="row seg">
         {#each Object.entries(DEVICES) as [k, d]}<button class:on={app.device === k} onclick={() => { app.device = k; app.selected = null; app.multi = []; }}>{d.label}</button>{/each}
       </div>

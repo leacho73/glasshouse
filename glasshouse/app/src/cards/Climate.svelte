@@ -96,6 +96,11 @@
   function up() { if (!dragging) return; dragging = false; setTarget(pending, true); }
 
   const wide = $derived(w > h * 1.35);
+  // Room left for the dial after the header, buttons and pickers; below ~130px
+  // the card switches to a compact − temperature + row.
+  const extrasShown = $derived((show('presets') && (a.preset_modes || []).length) || (show('fan') && (a.fan_modes || []).length));
+  const dialSpace = $derived(wide ? h - 74 : h - 74 - (!off && target != null ? 50 : 0) - (show('modes') && modes.length ? 54 : 0) - (extrasShown ? 42 : 0));
+  const useDial = $derived(show('dial') && dialSpace >= 130 && w >= 150);
   const presets = $derived(a.preset_modes || []);
   const fans = $derived(a.fan_modes || []);
 </script>
@@ -109,7 +114,7 @@
   </div>
 
   <div class="body">
-    {#if show('dial')}
+    {#if useDial}
       <div class="dial" data-stop>
         <svg bind:this={svg} viewBox="0 0 200 200" onpointerdown={down} onpointermove={move} onpointerup={up} onpointercancel={up} role="slider" aria-valuenow={shown} aria-valuemin={min} aria-valuemax={max} tabindex="-1">
           <path d={arc(0, 1)} class="track" />
@@ -136,11 +141,19 @@
         </div>
       </div>
     {:else}
-      <div class="plain"><span class="tgt">{off ? 'Off' : formatNumber(shown, step < 1 ? 1 : 0)}<small>{unit}</small></span>{#if show('current') && cur != null}<span class="now">Now {formatNumber(cur, 1)}{unit}</span>{/if}</div>
+      <div class="row" data-stop>
+        {#if !off && shown != null}<button class="rb" onclick={() => setTarget((pending ?? target) - step)} aria-label="Lower"><Icon icon="mdi:minus" size="1.3em" /></button>{/if}
+        <div class="rc">
+          {#if show('action')}<div class="act" class:pulse={action === 'heating' || action === 'cooling'}><Icon icon={ACTION[action]?.[0] || 'mdi:thermostat'} size="1em" /> {ACTION[action]?.[1] || action}</div>{/if}
+          <div class="tgt" class:pending={pending != null}>{off ? 'Off' : shown != null ? formatNumber(shown, step < 1 ? 1 : 0) : cur != null ? formatNumber(cur, 1) : '—'}{#if !off && (shown ?? cur) != null}<small>{unit}</small>{/if}</div>
+          {#if show('current') && cur != null && shown != null}<div class="now">Now {formatNumber(cur, 1)}{unit}</div>{/if}
+        </div>
+        {#if !off && shown != null}<button class="rb" onclick={() => setTarget((pending ?? target) + step)} aria-label="Raise"><Icon icon="mdi:plus" size="1.3em" /></button>{/if}
+      </div>
     {/if}
 
     <div class="side">
-      {#if !off && shown != null}
+      {#if useDial && !off && shown != null}
         <div class="pm" data-stop>
           <button onclick={() => setTarget((pending ?? target) - step)} aria-label="Lower"><Icon icon="mdi:minus" size="1.3em" /></button>
           <button onclick={() => setTarget((pending ?? target) + step)} aria-label="Raise"><Icon icon="mdi:plus" size="1.3em" /></button>
@@ -150,7 +163,7 @@
         <div class="modes" data-stop>
           {#each modes as m}
             <button class:sel={m === mode} style="--mc:{MODE_COLOR[m] || 'var(--accent)'}" onclick={() => setMode(m)} title={label(m)}>
-              <Icon icon={MODE[m]?.[0] || 'mdi:circle-medium'} size="1.15em" />{#if modes.length <= 4 || wide}<span>{label(m)}</span>{/if}
+              <Icon icon={MODE[m]?.[0] || 'mdi:circle-medium'} size="1.15em" />{#if (wide ? w / 2 : w) / modes.length >= 62}<span>{label(m)}</span>{/if}
             </button>
           {/each}
         </div>
@@ -198,7 +211,10 @@
   .tgt.pending { color: var(--c); }
   .tgt small { font-size: .38em; color: var(--muted); font-weight: 500; vertical-align: top; margin-left: 2px; }
   .now { font-size: .8em; color: var(--muted); }
-  .plain { display: flex; align-items: baseline; gap: 10px; justify-content: center; flex: 1; align-self: center; }
+  .row { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .rc { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; }
+  .rb { width: 2.6em; height: 2.6em; flex: none; border-radius: 50%; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.06); color: inherit; display: grid; place-items: center; }
+  .rb:active { background: color-mix(in srgb, var(--c) 45%, transparent); }
   .side { display: flex; flex-direction: column; gap: 8px; }
   .wide .side { flex: 1; min-width: 0; }
   .pm { display: flex; justify-content: center; gap: 12px; }

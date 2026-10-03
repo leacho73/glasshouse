@@ -69,9 +69,12 @@ export function detectDevice() {
   if (q && DEVICES[q]) return q;
   const saved = localStorage.getItem('hd-device');
   if (saved && DEVICES[saved]) return saved;
-  const w = innerWidth;
+  const w = Math.min(innerWidth, screen.width || innerWidth);
   if (w < 700) return 'phone';
-  if (matchMedia('(pointer: coarse)').matches && w <= 1400) return 'tablet';
+  // Touch-only screens are tablets whatever their reported width (high-DPI
+  // tablets can report 1400+ CSS px). Anything with a mouse is a desktop.
+  const touchOnly = matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+  if (touchOnly || (matchMedia('(pointer: coarse)').matches && w <= 1400)) return 'tablet';
   return 'desktop';
 }
 

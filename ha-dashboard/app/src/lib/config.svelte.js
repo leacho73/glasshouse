@@ -181,7 +181,7 @@ export function selectedCard() {
 
 export function addCard(type, meta, zone = app.view) {
   const id = uid();
-  app.config.cards[id] = normalise({ id, type, props: structuredClone(meta.defaults || {}) });
+  app.config.cards[id] = normalise({ id, type, props: { ...structuredClone(meta.defaults || {}), ...(meta.autofill?.() || {}) } });
   const list = zoneList(zone);
   const y = list.reduce((m, p) => Math.max(m, p.y + p.h), 0) + (list.length ? GRID * 2 : GRID * 2);
   const w = Math.min(meta.size?.w || 200, zoneWidth(zone) - GRID * 4);

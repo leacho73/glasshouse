@@ -29,10 +29,15 @@
     if (display === 'screen' && !app.editing) return Math.min(fit, vh / contentH);
     return fit;
   });
-  const left = $derived(Math.max(0, (available - L.width * scale) / 2));
-  const mainW = $derived(L.width - sb);
+  // When a wall tablet shrinks a tall view to fit, stretch the canvas to the full
+  // screen width (sidebar stays at the edge, main area gets the spare space)
+  // instead of centring it with gaps either side.
+  const fill = $derived(display === 'screen' && !app.editing && scale < fit);
+  const stageW = $derived(fill ? available / scale : L.width);
+  const left = $derived(fill ? 0 : Math.max(0, (available - L.width * scale) / 2));
+  const mainW = $derived(stageW - sb);
   const origin = (zone) => ({
-    x: zone === 'sidebar' ? (L.sidebar.side === 'right' ? L.width - sb : 0) : L.sidebar.side === 'right' ? 0 : sb,
+    x: zone === 'sidebar' ? (L.sidebar.side === 'right' ? stageW - sb : 0) : L.sidebar.side === 'right' ? 0 : sb,
     y: zone === 'sidebar' ? scrollY / scale - (sbEl?.scrollTop || 0) : 0,
   });
   /** Pointer position in a zone's own coordinates. */
@@ -231,7 +236,7 @@
 {/snippet}
 
 <div class="stage" class:editing={app.editing} class:dragging={!!op} class:right={L.sidebar.side === 'right'}
-  style="width:{L.width}px;zoom:{scale};margin-left:{left / scale}px;--grid:{GRID}px">
+  style="width:{stageW}px;zoom:{scale};margin-left:{left / scale}px;--grid:{GRID}px">
   {#if sb}
     <aside class="zone sidebar" bind:this={sbEl} style="width:{sb}px;height:{vh / scale}px">
       <div class="inner" role="presentation" style="height:{sideH}px" onpointerdown={(e) => bgDown(e, 'sidebar')} onpointermove={move} onpointerup={end}>{@render zone('sidebar', sideList)}</div>

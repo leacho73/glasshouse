@@ -181,7 +181,7 @@ function addEnergy(cfg, add) {
   if (has('energy-today', 'cost')) items.push(['energy-today', card('energy-today'), 1, 300]);
   if (has('heatpump', 'power_in')) items.push(['heatpump', card('heatpump'), 1, 300]);
   if (has('myenergi', 'mode')) items.push(['myenergi', card('myenergi'), 1, 230]);
-  const evName = (p) => p.replace(/_/g, ' ').replace(/ 2 0$/, ' 2.0').replace(/\b\w/g, (c) => c.toUpperCase());
+  const evName = (p) => p.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   for (const id of states.keys()) {
     let m;
     if ((m = id.match(/^sensor\.((?!octopus)[a-z0-9_]+?)(?<!target)_state_of_charge$/))) {

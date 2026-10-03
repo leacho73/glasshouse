@@ -1,7 +1,7 @@
-name: HA Dashboard
-version: "0.4.0"
+name: Glasshouse
+version: "0.5.0"
 slug: ha_dashboard
-description: Fast, free-layout drag-and-drop dashboard with templated, styleable cards
+description: Glassy, fast, drag-and-drop Home Assistant dashboard — free layout, templated cards, Octopus energy cards
 url: https://github.com/leacho73/ha-dashboard
 arch:
   - aarch64
@@ -9,8 +9,8 @@ arch:
 init: false
 ingress: true
 ingress_port: 8099
-panel_icon: mdi:view-dashboard-variant
-panel_title: Dashboard
+panel_icon: mdi:greenhouse
+panel_title: Glasshouse
 homeassistant_api: true
 hassio_api: true
 ports:

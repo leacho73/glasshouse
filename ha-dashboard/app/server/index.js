@@ -132,4 +132,4 @@ if (fs.existsSync(DIST)) {
   }
 }
 
-server.listen(PORT, () => console.log(`HA Dashboard on :${PORT} -> ${HA_URL}`));
+server.listen(PORT, () => console.log(`Glasshouse on :${PORT} -> ${HA_URL}`));

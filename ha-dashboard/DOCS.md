@@ -1,6 +1,6 @@
-# HA Dashboard
+# Glasshouse
 
-Open **Dashboard** in the HA sidebar. Press the faint pencil (top-right) or **E** to edit.
+Open **Glasshouse** in the HA sidebar. Press the faint pencil (top-right) or **E** to edit.
 
 - **Add** cards from the panel; drag to move (between sidebar and main area too), drag any edge/corner to resize. Shift = 1px precision, arrows nudge, Delete, Ctrl+D duplicate, Ctrl+Z undo.
 - **Card → Content / Style / Actions / Size**: any text field can be an HA template (`{{ states('sensor.x') }}`), including colours and styling.

@@ -3,16 +3,17 @@
     type: 'powerflow', name: 'Power flow', icon: 'mdi:home-lightning-bolt', category: 'Energy',
     size: { w: 340, h: 340 }, tap: 'none',
     defaults: { unit: 'W' },
+    sections: [{ key: 'solar', label: 'Solar', section: 'solar' }, { key: 'grid', label: 'Grid', section: 'grid' }, { key: 'battery', label: 'Battery', section: 'battery' }, { key: 'ev', label: 'EV', section: 'ev' }, { key: 'home', label: 'Home', section: 'home' }, { key: 'flows', label: 'Flow lines' }],
     fields: [
       { key: 'solar', label: 'Solar power', type: 'entity', domain: 'sensor' },
       { key: 'grid', label: 'Grid power (+import / −export)', type: 'entity', domain: 'sensor' },
-      { key: 'grid_invert', label: 'Invert grid sign', type: 'bool' },
+      { key: 'grid_invert', label: 'Invert grid sign', type: 'bool', section: 'grid' },
       { key: 'battery', label: 'Battery power (+discharge / −charge)', type: 'entity', domain: 'sensor' },
-      { key: 'battery_invert', label: 'Invert battery sign', type: 'bool' },
-      { key: 'battery_soc', label: 'Battery %', type: 'entity', domain: 'sensor' },
+      { key: 'battery_invert', label: 'Invert battery sign', type: 'bool', section: 'battery' },
+      { key: 'battery_soc', label: 'Battery %', type: 'entity', domain: 'sensor', section: 'battery' },
       { key: 'home', label: 'Home power (blank = calculated)', type: 'entity', domain: 'sensor' },
       { key: 'ev', label: 'EV / charger power', type: 'entity', domain: 'sensor' },
-      { key: 'ev_label', label: 'EV label', type: 'text' },
+      { key: 'ev_label', label: 'EV label', type: 'text', section: 'ev' },
     ],
   };
 </script>
@@ -21,6 +22,7 @@
   import Icon from '../components/Icon.svelte';
   import { t, ent } from '../lib/tpl.js';
   let { props } = $props();
+  const show = (k) => !props.hide?.[k];
   // Normalise any power sensor to watts.
   function watts(id) {
     const e = ent(id);
@@ -41,16 +43,16 @@
   // Node positions in a 100x100 box.
   const P = { solar: [50, 13], grid: [13, 50], home: [50, 50], batt: [50, 87], ev: [87, 50] };
   const lines = $derived([
-    props.solar && { from: 'solar', to: 'home', w: solar, color: C.solar },
-    props.grid && { from: grid >= 0 ? 'grid' : 'home', to: grid >= 0 ? 'home' : 'grid', w: grid, color: grid >= 0 ? C.grid : C.exp, a: 'grid', b: 'home' },
-    props.battery && { from: batt >= 0 ? 'batt' : 'home', to: batt >= 0 ? 'home' : 'batt', w: batt, color: C.batt, a: 'batt', b: 'home' },
-    props.ev && { from: 'home', to: 'ev', w: ev, color: C.ev },
+    props.solar && show('solar') && { from: 'solar', to: 'home', w: solar, color: C.solar },
+    props.grid && show('grid') && { from: grid >= 0 ? 'grid' : 'home', to: grid >= 0 ? 'home' : 'grid', w: grid, color: grid >= 0 ? C.grid : C.exp, a: 'grid', b: 'home' },
+    props.battery && show('battery') && { from: batt >= 0 ? 'batt' : 'home', to: batt >= 0 ? 'home' : 'batt', w: batt, color: C.batt, a: 'batt', b: 'home' },
+    props.ev && show('ev') && { from: 'home', to: 'ev', w: ev, color: C.ev },
   ].filter(Boolean));
 </script>
 
 <div class="pf">
   <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-    {#each lines as l}
+    {#each show('flows') ? lines : [] as l}
       {@const [x1, y1] = P[l.a || l.from]}
       {@const [x2, y2] = P[l.b || l.to]}
       <line {x1} {y1} {x2} {y2} stroke="rgba(255,255,255,.08)" stroke-width="1.2" />
@@ -67,11 +69,11 @@
       <span class="l">{label}</span>
     </div>
   {/snippet}
-  {#if props.solar}{@render node('solar', 'mdi:solar-power', 'Solar', solar, C.solar)}{/if}
-  {#if props.grid}{@render node('grid', 'mdi:transmission-tower', grid < 0 ? 'Export' : 'Grid', grid, grid < 0 ? C.exp : C.grid)}{/if}
-  {@render node('home', 'mdi:home', 'Home', home, C.home)}
-  {#if props.battery}{@render node('batt', 'mdi:home-battery', batt < 0 ? 'Charging' : 'Battery', batt, C.batt, soc != null ? Math.round(soc) + '%' : '')}{/if}
-  {#if props.ev}{@render node('ev', 'mdi:car-electric', t(props.ev_label) || 'EV', ev, C.ev)}{/if}
+  {#if props.solar && show('solar')}{@render node('solar', 'mdi:solar-power', 'Solar', solar, C.solar)}{/if}
+  {#if props.grid && show('grid')}{@render node('grid', 'mdi:transmission-tower', grid < 0 ? 'Export' : 'Grid', grid, grid < 0 ? C.exp : C.grid)}{/if}
+  {#if show('home')}{@render node('home', 'mdi:home', 'Home', home, C.home)}{/if}
+  {#if props.battery && show('battery')}{@render node('batt', 'mdi:home-battery', batt < 0 ? 'Charging' : 'Battery', batt, C.batt, soc != null ? Math.round(soc) + '%' : '')}{/if}
+  {#if props.ev && show('ev')}{@render node('ev', 'mdi:car-electric', t(props.ev_label) || 'EV', ev, C.ev)}{/if}
 </div>
 
 <style>

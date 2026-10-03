@@ -3,6 +3,7 @@
     type: 'weather', name: 'Weather', icon: 'mdi:weather-partly-cloudy', category: 'Info',
     size: { w: 380, h: 200 }, tap: 'more-info',
     defaults: { entity: '', forecast: 'daily', days: 5 },
+    sections: [{ key: 'icon', label: 'Icon' }, { key: 'temp', label: 'Temperature' }, { key: 'cond', label: 'Condition' }, { key: 'humidity', label: 'Humidity' }, { key: 'wind', label: 'Wind' }, { key: 'forecast', label: 'Forecast', section: 'forecast' }, { key: 'low', label: 'Forecast lows' }],
     fields: [
       { key: 'entity', label: 'Weather', type: 'entity', domain: 'weather' },
       { key: 'name', label: 'Name', type: 'text' },
@@ -18,6 +19,7 @@
   import { t, ent } from '../lib/tpl.js';
   import { subscribe } from '../lib/ha.svelte.js';
   let { props, w } = $props();
+  const show = (k) => !props.hide?.[k];
   const e = $derived(ent(props.entity));
   const a = $derived(e?.attributes || {});
   let forecast = $state([]);
@@ -33,24 +35,24 @@
 
 <div class="wx">
   <div class="now">
-    <Icon icon={WX[e?.state] || 'mdi:weather-cloudy'} size="3.2em" />
+    {#if show('icon')}<Icon icon={WX[e?.state] || 'mdi:weather-cloudy'} size="3.2em" />{/if}
     <div>
-      <div class="temp">{a.temperature != null ? Math.round(a.temperature) + '°' : '—'}</div>
-      <div class="cond">{t(props.name) || (e?.state || '').replace(/-/g, ' ')}</div>
+      {#if show('temp')}<div class="temp">{a.temperature != null ? Math.round(a.temperature) + '°' : '—'}</div>{/if}
+      {#if show('cond')}<div class="cond">{t(props.name) || (e?.state || '').replace(/-/g, ' ')}</div>{/if}
     </div>
     <div class="extra">
-      {#if a.humidity != null}<span><Icon icon="mdi:water-percent" size="1em" /> {a.humidity}%</span>{/if}
-      {#if a.wind_speed != null}<span><Icon icon="mdi:weather-windy" size="1em" /> {Math.round(a.wind_speed)} {a.wind_speed_unit || ''}</span>{/if}
+      {#if a.humidity != null && show('humidity')}<span><Icon icon="mdi:water-percent" size="1em" /> {a.humidity}%</span>{/if}
+      {#if a.wind_speed != null && show('wind')}<span><Icon icon="mdi:weather-windy" size="1em" /> {Math.round(a.wind_speed)} {a.wind_speed_unit || ''}</span>{/if}
     </div>
   </div>
-  {#if items.length}
+  {#if items.length && show('forecast')}
     <div class="fc">
       {#each items as f}
         <div class="day">
           <div class="d">{label(f)}</div>
           <Icon icon={WX[f.condition] || 'mdi:weather-cloudy'} size="1.6em" />
           <div class="hi">{Math.round(f.temperature)}°</div>
-          {#if f.templow != null}<div class="lo">{Math.round(f.templow)}°</div>{/if}
+          {#if f.templow != null && show('low')}<div class="lo">{Math.round(f.templow)}°</div>{/if}
         </div>
       {/each}
     </div>

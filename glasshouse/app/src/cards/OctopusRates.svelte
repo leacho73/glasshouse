@@ -40,13 +40,24 @@
   import Icon from '../components/Icon.svelte';
   import { t } from '../lib/tpl.js';
   import { clock } from '../lib/clock.svelte.js';
-  import { rates, dispatches, sessions, merge, pence, rateColor, hm, until, KIND } from '../lib/octopus.js';
+  import { rates, dispatches, sessions, merge, pence, rateColor, hm, day, until, KIND } from '../lib/octopus.js';
   let { props } = $props();
   const show = (k) => !props.hide?.[k];
   let w = $state(500), h = $state(150);
 
   const th = $derived({ cheap: (Number(props.cheap) || 10) / 100, peak: (Number(props.peak) || 25) / 100 });
-  const all = $derived(rates(props.prev_rates, props.rates, props.next_rates));
+  const raw = $derived(rates(props.prev_rates, props.rates, props.next_rates));
+  // Octoplus sessions change what electricity really costs: Free Electricity and
+  // joined Power Ups make it free; in a joined Saving Session every kWh you use
+  // also costs the reward you'd have earned (800 Octopoints = £1).
+  const octo = $derived(sessions(props));
+  const live = $derived(octo.filter((x) => x.joined && x.kind !== 'powerdown'));
+  const all = $derived(raw.map((r) => {
+    const x = live.find((q) => q.start < r.end && q.end > r.start);
+    if (!x) return { ...r, cost: r.value };
+    if (x.kind === 'free' || x.kind === 'powerup') return { ...r, base: r.value, value: 0, cost: 0, tag: x.kind };
+    return { ...r, tag: 'saving', cost: r.value + (x.perKwh || 0) / 800 };
+  }));
   const exp = $derived(props.show_export ? rates(props.export_rates, props.export_next) : []);
   const now = $derived(clock.now);
   const range = $derived.by(() => {
@@ -59,21 +70,23 @@
   });
   const slots = $derived(all.filter((r) => r.end > range[0] && r.start < range[1]));
   const cur = $derived(all.find((r) => r.start <= now && now < r.end));
-  const nextChange = $derived(cur ? all.find((r) => r.start >= cur.end && Math.abs(r.value - cur.value) > 1e-6) : null);
+  const nextChange = $derived(cur ? all.find((r) => r.start >= cur.end && (Math.abs(r.value - cur.value) > 1e-6 || r.tag !== cur.tag)) : null);
+  const nowSess = $derived(live.find((x) => x.start <= now && now < x.end));
+  const nextSess = $derived(octo.find((x) => x.start > now && x.start - now < 2 * 864e5 && x.kind !== 'powerdown' && (x.joined || x.joinable)));
   const vals = $derived(slots.map((s) => s.value));
   const max = $derived(Math.max(0.3, ...vals, ...exp.map((e) => e.value)));
   const min = $derived(Math.min(0, ...vals));
   const avg = $derived(vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null);
   const disp = $derived(props.dispatching ? dispatches(props.dispatching) : null);
   const dispPeriods = $derived(disp ? merge([...disp.planned, ...disp.completed]).filter((d) => d.end > range[0] && d.start < range[1]) : []);
-  const sess = $derived(props.show_sessions ? sessions(props).filter((s) => s.end > range[0] && s.start < range[1]) : []);
+  const sess = $derived(props.show_sessions ? octo.filter((s) => s.end > range[0] && s.start < range[1]) : []);
   // Cheapest upcoming 2h window, handy for planning loads.
   const cheapest = $derived.by(() => {
     const fut = all.filter((r) => r.end > now);
     let best = null;
     for (let i = 0; i + 3 < fut.length; i++) {
       if (fut[i + 3].start - fut[i].start !== 3 * 18e5) continue;
-      const v = (fut[i].value + fut[i + 1].value + fut[i + 2].value + fut[i + 3].value) / 4;
+      const v = (fut[i].cost + fut[i + 1].cost + fut[i + 2].cost + fut[i + 3].cost) / 4;
       if (!best || v < best.v) best = { v, start: fut[i].start };
     }
     return best;
@@ -95,8 +108,18 @@
   <div class="head">
     {#if show('now')}<div class="now">
       <div class="lbl">{t(props.title) || 'Electricity now'}</div>
-      <div class="big" style="color:{cur ? rateColor(cur.value, th) : 'inherit'}">{cur ? pence(cur.value) : '—'}<small>/kWh</small></div>
-      {#if nextChange}<div class="sub">{pence(nextChange.value)} from {hm(nextChange.start)} <span class="dim">({until(nextChange.start, now)})</span></div>{/if}
+      {#if nowSess && (nowSess.kind === 'free' || nowSess.kind === 'powerup')}
+        <div class="big" style="color:{KIND[nowSess.kind].color}">FREE{#if cur?.base != null}<small>normally {pence(cur.base)}</small>{/if}</div>
+        <div class="sess" style="--k:{KIND[nowSess.kind].color}"><Icon icon={KIND[nowSess.kind].icon} size="1em" />{KIND[nowSess.kind].label} until {hm(nowSess.end)} <span class="dim">({until(nowSess.end, now)} left)</span></div>
+      {:else}
+        <div class="big" style="color:{cur ? rateColor(cur.value, th) : 'inherit'}">{cur ? pence(cur.value) : '—'}<small>/kWh</small></div>
+        {#if nowSess?.kind === 'saving'}
+          <div class="sess" style="--k:{KIND.saving.color}"><Icon icon={KIND.saving.icon} size="1em" /><span>Saving Session until {hm(nowSess.end)}{#if nowSess.perKwh}{' · '}earn £{(nowSess.perKwh / 800).toFixed(2)}/kWh saved{/if}</span></div>
+        {:else if nextChange}<div class="sub">{nextChange.tag === 'free' || nextChange.tag === 'powerup' ? 'Free' : pence(nextChange.value)} from {hm(nextChange.start)} <span class="dim">({until(nextChange.start, now)})</span></div>{/if}
+      {/if}
+      {#if nextSess && !nowSess}
+        <div class="next" style="--k:{KIND[nextSess.kind].color}"><Icon icon={KIND[nextSess.kind].icon} size="1em" />{KIND[nextSess.kind].label} {day(nextSess.start, now).toLowerCase()} {hm(nextSess.start)}–{hm(nextSess.end)}{#if !nextSess.joined}<span class="dim">{' · not joined'}</span>{/if}</div>
+      {/if}
     </div>{:else}<div></div>{/if}
     <div class="stats">
       {#if show('stats')}
@@ -104,7 +127,7 @@
       <div><span class="dim">Avg</span> {pence(avg)}</div>
       <div><span class="dim">Max</span> {pence(Math.max(...vals))}</div>
       {/if}
-      {#if cheapest && show('cheapest')}<div class="cheap"><Icon icon="mdi:timer-sand" size="1em" /> Cheapest 2h: {hm(cheapest.start)}{' · '}{pence(cheapest.v)}</div>{/if}
+      {#if cheapest && show('cheapest')}<div class="cheap"><Icon icon="mdi:timer-sand" size="1em" /> Cheapest 2h: {day(cheapest.start, now) === 'Today' ? '' : day(cheapest.start, now) + ' '}{hm(cheapest.start)}{' · '}{cheapest.v <= 0 ? 'free' : pence(cheapest.v)}</div>{/if}
     </div>
   </div>
   {#if show('chart')}<div class="chart" bind:clientWidth={w} bind:clientHeight={h}>
@@ -116,7 +139,13 @@
       {#each slots as s}
         {@const x = X(Math.max(s.start, range[0]))}
         {@const bw = Math.max(1, X(Math.min(s.end, range[1])) - x - 1.5)}
-        <rect {x} y={Math.min(Y(s.value), Y(0))} width={bw} height={Math.max(1.5, Math.abs(Y(0) - Y(s.value)))} rx="2" fill={rateColor(s.value, th)} opacity={s.end <= now ? 0.35 : 0.9} />
+        {#if s.tag === 'free' || s.tag === 'powerup'}
+          <!-- Free: the usual price as a ghost bar in the session colour, solid at 0p. -->
+          <rect {x} y={Y(s.base)} width={bw} height={Math.max(1.5, Y(0) - Y(s.base))} rx="2" fill={KIND[s.tag].color} opacity={s.end <= now ? 0.15 : 0.3} />
+          <rect {x} y={Y(0) - 4} width={bw} height="4" rx="2" fill={KIND[s.tag].color} opacity={s.end <= now ? 0.5 : 1} />
+        {:else}
+          <rect {x} y={Math.min(Y(s.value), Y(0))} width={bw} height={Math.max(1.5, Math.abs(Y(0) - Y(s.value)))} rx="2" fill={rateColor(s.value, th)} opacity={s.end <= now ? 0.35 : 0.9} />
+        {/if}
       {/each}
       {#each dispPeriods as d}
         <rect x={X(d.start)} y={h - 22} width={Math.max(3, X(d.end) - X(d.start))} height="5" rx="2.5" fill={KIND.dispatch.color} opacity={d.end < now ? 0.5 : 1} />
@@ -141,6 +170,11 @@
   .big { font-size: 2.2em; font-weight: 600; line-height: 1.1; letter-spacing: -.02em; }
   .big small { font-size: .4em; color: var(--muted); font-weight: 400; margin-left: 3px; }
   .sub { font-size: .9em; }
+  .sess, .next { display: flex; align-items: center; gap: 5px; font-size: .85em; font-weight: 600; color: var(--k); }
+  .sess span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sess { max-width: 100%; padding: 3px 9px; border-radius: 9px; background: color-mix(in srgb, var(--k) 16%, transparent); width: fit-content; margin-top: 2px; }
+  .next { font-weight: 500; margin-top: 2px; }
+  .big small { white-space: nowrap; }
   .dim { color: var(--muted); }
   .stats { text-align: right; font-size: .85em; display: flex; flex-direction: column; gap: 2px; }
   .cheap { color: #5bd88f; display: flex; align-items: center; gap: 4px; justify-content: flex-end; margin-top: 4px; }

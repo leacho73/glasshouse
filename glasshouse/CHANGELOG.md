@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.16.0
+
+- **Hot tub card** (Add → Controls): a top-down tub that warms in colour with the water, ripples and bubbles while the pumps run, steams while heating and glows with the light on. Target temperature − / +, pump (Off → Low → High) and light buttons, WaterCare mode, economy and standby, status lights (heating, circulation, ozone, filter cycle, winter mode) and maintenance reminders (rinse / clean filter, change water) that turn amber when due and red when overdue. Gecko (in.touch2) spas are detected automatically.
+- **Washing machine, Tumble dryer and Dishwasher cards** (Add → Controls): a porthole whose drum turns while running (fast on spin) or a dish rack with spray, ringed by progress; time left and when it'll finish, programme and phase, settings (spin, temperature, dry level), alerts (salt / rinse aid low, door open, leak sensors) and Pause / Resume / Stop. Detects Samsung SmartThings washers, Home Connect (Bosch / Neff / Siemens) dishwashers and hOn (Haier / Candy / Hoover) dryers.
+- **Octopus rates** now knows about Octoplus sessions: during Free Electricity or a Power Up the price shows as FREE (with the usual price beside it) and a countdown; during a joined Saving Session a banner shows what each kWh saved earns; the next session is shown under the price. The cheapest 2 hours counts free slots as 0p and avoids Saving Sessions, and free slots are drawn in teal on the chart.
+
 ## 0.15.0
 
 New address options for wall tablets:

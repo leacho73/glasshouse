@@ -64,7 +64,6 @@
         </div>
       {/if}
     </div>
-    {#if on && dimmable}<div class="pct">{pct}<small>%</small></div>{/if}
   </div>
 
   {#if dimmable && show('brightness')}
@@ -103,8 +102,6 @@
   .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .state { color: var(--muted); font-size: .85em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .mem { color: var(--muted); }
-  .pct { font-size: 1.7em; font-weight: 600; letter-spacing: -.03em; line-height: 1; }
-  .pct small { font-size: .5em; color: var(--muted); font-weight: 500; }
   .quick { display: flex; align-items: center; gap: 6px; min-width: 0; }
   .quick button { flex: 1 1 0; min-width: 0; max-width: 1.9em; aspect-ratio: 1; border-radius: 50%; border: 2px solid rgba(255,255,255,.15); padding: 0; transition: transform .15s; }
   .quick button:active { transform: scale(.88); }

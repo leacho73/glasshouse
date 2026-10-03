@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.1
+
+- Light card: removed the big brightness % on the right — it was already shown under the name.
+
 ## 0.12.0
 
 - **Home battery card** (Add → Energy): charge %, kWh left of usable capacity, charging / discharging power, time until full or until your backup reserve (with clock time), status, health, temperature, today's in / out and a 24-hour charge graph. SolarEdge batteries are detected automatically; any other battery can be picked by hand. Wide cards put the graph alongside. Also added to the ha-fusion import's Energy view.

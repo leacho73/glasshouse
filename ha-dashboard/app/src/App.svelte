@@ -3,7 +3,7 @@
   import Editor from './components/Editor.svelte';
   import Popup from './components/Popup.svelte';
   import Icon from './components/Icon.svelte';
-  import { app, load, save, layout, DEVICES, detectDevice, setView, removeSelected, duplicateSelected, selectedPlacement, changed, undo, undoLast } from './lib/config.svelte.js';
+  import { app, load, save, layout, DEVICES, detectDevice, setView, removeSelected, duplicateSelected, selectedPlacement, changed, undo, undoLast, selectionSet, ensureEditable, zoneList, groupSelected } from './lib/config.svelte.js';
   import { conn, toasts, watchEntities } from './lib/ha.svelte.js';
   import { GRID } from './lib/config.svelte.js';
 
@@ -52,13 +52,20 @@
     if (!app.editing) return;
     if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); return undoLast(); }
     const p = selectedPlacement();
-    if (e.key === 'Escape') return (app.selected = null);
+    if (e.key === 'Escape') { app.selected = null; app.multi = []; return; }
     if (!p) return;
     if (e.key === 'Delete' || e.key === 'Backspace') return removeSelected(false);
     if ((e.ctrlKey || e.metaKey) && e.key === 'd') { e.preventDefault(); return duplicateSelected(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'g') { e.preventDefault(); return groupSelected(); }
     const step = e.shiftKey ? 1 : GRID;
     const mv = { ArrowLeft: ['x', -step], ArrowRight: ['x', step], ArrowUp: ['y', -step], ArrowDown: ['y', step] }[e.key];
-    if (mv) { e.preventDefault(); p[mv[0]] = Math.max(0, p[mv[0]] + mv[1]); changed(); }
+    if (mv) {
+      e.preventDefault();
+      ensureEditable();
+      const list = zoneList(app.selected.zone);
+      for (const i of selectionSet()) list[i][mv[0]] = Math.max(0, list[i][mv[0]] + mv[1]);
+      changed();
+    }
   }
 
   // Keep the wall tablet awake-friendly: reload config if it changes elsewhere (every 60s while idle viewing).
@@ -92,8 +99,8 @@
       <select value={app.view} onchange={(e) => setView(e.currentTarget.value)} title="View">
         {#each app.config.views as v}<option value={v.id}>{v.name}</option>{/each}
       </select>
-      <select value={app.device} onchange={(e) => { app.device = e.currentTarget.value; app.selected = null; }} title="Device layout">
-        {#each Object.entries(DEVICES) as [k, d]}<option value={k}>{d.label} · {layout().width}px</option>{/each}
+      <select value={app.device} onchange={(e) => { app.device = e.currentTarget.value; app.selected = null; app.multi = []; }} title="Preview / edit device">
+        {#each Object.entries(DEVICES) as [k, d]}<option value={k}>{d.label}{k !== 'tablet' ? ` · ${app.config.layouts[k].mode}` : ''}</option>{/each}
       </select>
       <button title="Toggle panel" onclick={() => (app.panel = app.panel ? null : 'add')}><Icon icon="mdi:dock-right" size="1.2em" /></button>
       <span class="st">{app.saving ? 'Saving…' : app.dirty ? 'Unsaved' : 'Saved'}</span>

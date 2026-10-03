@@ -15,6 +15,7 @@
       powerup: find(/^event\.octopus_energy_.+_octoplus_power_up_events$/),
       free: find(/^event\.octopus_energy_.+_octoplus_free_electricity_session_events$/),
     }),
+    sections: [{ key: 'now', label: 'Current rate' }, { key: 'stats', label: 'Min / avg / max' }, { key: 'cheapest', label: 'Cheapest 2h' }, { key: 'chart', label: 'Chart' }, { key: 'legend', label: 'Legend' }],
     fields: [
       { key: 'title', label: 'Title', type: 'text' },
       { key: 'window', label: 'Window', type: 'select', options: [{ value: 'next24', label: 'Now → +24h' }, { value: 'today', label: 'Today' }, { value: 'both', label: 'Today + tomorrow' }] },
@@ -41,6 +42,7 @@
   import { clock } from '../lib/clock.svelte.js';
   import { rates, dispatches, sessions, merge, pence, rateColor, hm, until, KIND } from '../lib/octopus.js';
   let { props } = $props();
+  const show = (k) => !props.hide?.[k];
   let w = $state(500), h = $state(150);
 
   const th = $derived({ cheap: (Number(props.cheap) || 10) / 100, peak: (Number(props.peak) || 25) / 100 });
@@ -91,19 +93,21 @@
 
 <div class="rates">
   <div class="head">
-    <div class="now">
+    {#if show('now')}<div class="now">
       <div class="lbl">{t(props.title) || 'Electricity now'}</div>
       <div class="big" style="color:{cur ? rateColor(cur.value, th) : 'inherit'}">{cur ? pence(cur.value) : '—'}<small>/kWh</small></div>
       {#if nextChange}<div class="sub">{pence(nextChange.value)} from {hm(nextChange.start)} <span class="dim">({until(nextChange.start, now)})</span></div>{/if}
-    </div>
+    </div>{:else}<div></div>{/if}
     <div class="stats">
+      {#if show('stats')}
       <div><span class="dim">Min</span> {pence(Math.min(...vals))}</div>
       <div><span class="dim">Avg</span> {pence(avg)}</div>
       <div><span class="dim">Max</span> {pence(Math.max(...vals))}</div>
-      {#if cheapest}<div class="cheap"><Icon icon="mdi:timer-sand" size="1em" /> Cheapest 2h: {hm(cheapest.start)}{' · '}{pence(cheapest.v)}</div>{/if}
+      {/if}
+      {#if cheapest && show('cheapest')}<div class="cheap"><Icon icon="mdi:timer-sand" size="1em" /> Cheapest 2h: {hm(cheapest.start)}{' · '}{pence(cheapest.v)}</div>{/if}
     </div>
   </div>
-  <div class="chart" bind:clientWidth={w} bind:clientHeight={h}>
+  {#if show('chart')}<div class="chart" bind:clientWidth={w} bind:clientHeight={h}>
     <svg width={w} height={h}>
       {#each sess as s}
         <rect x={X(s.start)} y="0" width={Math.max(2, X(s.end) - X(s.start))} height={h - 16} fill={KIND[s.kind].color} opacity=".14" />
@@ -121,13 +125,13 @@
       {#if now > range[0] && now < range[1]}<line x1={X(now)} x2={X(now)} y1="0" y2={h - 14} stroke="#fff" stroke-width="1.5" stroke-dasharray="3 3" />{/if}
       {#each ticks as tm}<text x={X(tm)} y={h - 2} font-size="10" fill="currentColor" opacity=".55" text-anchor="middle">{new Date(tm).getHours().toString().padStart(2, '0')}:00</text>{/each}
     </svg>
-  </div>
-  <div class="legend">
+  </div>{/if}
+  {#if show('legend')}<div class="legend">
     <span><i style="background:#5bd88f"></i>&lt;{props.cheap}p</span><span><i style="background:#ffc861"></i>mid</span><span><i style="background:#ff7a90"></i>≥{props.peak}p</span>
     {#if dispPeriods.length}<span><i style="background:{KIND.dispatch.color}"></i>dispatch</span>{/if}
     {#each [...new Set(sess.map((s) => s.kind))] as k}<span><i style="background:{KIND[k].color}"></i>{KIND[k].label}</span>{/each}
     {#if expPath}<span><i style="background:#4fd1d9"></i>export</span>{/if}
-  </div>
+  </div>{/if}
 </div>
 
 <style>

@@ -12,15 +12,16 @@
       target: find(/^number\.octopus_energy_.+_intelligent_charge_target$/),
       ready_time: find(/^select\.octopus_energy_.+_intelligent_target_time$/),
     }),
+    sections: [{ key: 'status', label: 'Status line' }, { key: 'soc', label: 'EV %' }, { key: 'kpis', label: 'Totals' }, { key: 'slots', label: 'Slots' }, { key: 'smart', label: 'Smart charge' }, { key: 'bump', label: 'Bump charge' }, { key: 'ready', label: 'Ready by' }, { key: 'target', label: 'Charge target', section: 'target' }],
     fields: [
       { key: 'title', label: 'Title', type: 'text' },
       { key: 'dispatching', label: 'Intelligent dispatching', type: 'entity', domain: 'binary_sensor' },
       { key: 'state', label: 'Intelligent state', type: 'entity', domain: 'sensor' },
-      { key: 'smart_charge', label: 'Smart charge switch', type: 'entity', domain: 'switch' },
-      { key: 'bump_charge', label: 'Bump charge switch', type: 'entity', domain: 'switch' },
+      { key: 'smart_charge', label: 'Smart charge switch', type: 'entity', domain: 'switch', section: 'smart' },
+      { key: 'bump_charge', label: 'Bump charge switch', type: 'entity', domain: 'switch', section: 'bump' },
       { key: 'target', label: 'Charge target', type: 'entity', domain: 'number' },
-      { key: 'ready_time', label: 'Ready-by time', type: 'entity', domain: 'select' },
-      { key: 'ev_soc', label: 'EV battery % (optional)', type: 'entity', domain: 'sensor' },
+      { key: 'ready_time', label: 'Ready-by time', type: 'entity', domain: 'select', section: 'ready' },
+      { key: 'ev_soc', label: 'EV battery % (optional)', type: 'entity', domain: 'sensor', section: 'soc' },
     ],
   };
 </script>
@@ -35,6 +36,7 @@
   import { toggle } from '../lib/entity.js';
   import { dispatches, merge, hm, day, until, KIND } from '../lib/octopus.js';
   let { props } = $props();
+  const show = (k) => !props.hide?.[k];
   const now = $derived(clock.now);
   const de = $derived(ent(props.dispatching));
   const d = $derived(props.dispatching ? dispatches(props.dispatching) : { planned: [], completed: [], a: {} });
@@ -59,18 +61,18 @@
     <span class="ic" class:on={active}><Icon icon="mdi:ev-station" size="1.5em" /></span>
     <div class="t">
       <div class="title">{t(props.title) || 'Intelligent Octopus'}</div>
-      <div class="st">{active ? `Dispatching until ${hm(Date.parse(d.a.current_end))}` : planned.length ? `Next slot ${day(planned[0].start, now)} ${hm(planned[0].start)} (in ${until(planned[0].start, now)})` : st || 'No slots planned'}</div>
+      {#if show('status')}<div class="st">{active ? `Dispatching until ${hm(Date.parse(d.a.current_end))}` : planned.length ? `Next slot ${day(planned[0].start, now)} ${hm(planned[0].start)} (in ${until(planned[0].start, now)})` : st || 'No slots planned'}</div>{/if}
     </div>
-    {#if soc}<div class="soc">{Math.round(soc.state)}%</div>{/if}
+    {#if soc && show('soc')}<div class="soc">{Math.round(soc.state)}%</div>{/if}
   </div>
 
-  <div class="kpis">
+  {#if show('kpis')}<div class="kpis">
     <div><b>{plannedKwh.toFixed(1)}</b><span>kWh planned</span></div>
     <div><b>{doneKwh.toFixed(1)}</b><span>kWh dispatched 24h</span></div>
     {#if d.a.charge_point_power_in_kw}<div><b>{d.a.charge_point_power_in_kw}</b><span>kW charger</span></div>{/if}
-  </div>
+  </div>{/if}
 
-  <div class="slots">
+  {#if show('slots')}<div class="slots">
     {#each planned as p}
       <div class="slot" class:now={p.start <= now}><Icon icon="mdi:clock-outline" size="1em" /> {day(p.start, now)} {hm(p.start)}–{hm(p.end)}{#if p.kwh}<span class="dim">{' · '}{p.kwh.toFixed(1)} kWh</span>{/if}</div>
     {/each}
@@ -78,18 +80,18 @@
       <div class="dim">No planned slots. Recent:</div>
       {#each recent as p}<div class="slot dim"><Icon icon="mdi:check" size="1em" /> {day(p.start, now)} {hm(p.start)}–{hm(p.end)}{#if p.kwh}{' · '}{p.kwh.toFixed(1)} kWh{/if}</div>{/each}
     {/if}
-  </div>
+  </div>{/if}
 
   <div class="ctl" data-stop>
-    {#if smart}<label><span>Smart charge</span><Toggle on={smart.state === 'on'} color={C} onclick={() => toggle(smart)} /></label>{/if}
-    {#if bump}<label><span>Bump charge</span><Toggle on={bump.state === 'on'} color={C} onclick={() => toggle(bump)} /></label>{/if}
-    {#if ready}
+    {#if smart && show('smart')}<label><span>Smart charge</span><Toggle on={smart.state === 'on'} color={C} onclick={() => toggle(smart)} /></label>{/if}
+    {#if bump && show('bump')}<label><span>Bump charge</span><Toggle on={bump.state === 'on'} color={C} onclick={() => toggle(bump)} /></label>{/if}
+    {#if ready && show('ready')}
       <label><span>Ready by</span>
         <select value={ready.state} onchange={(e) => callService('select', 'select_option', { option: e.currentTarget.value }, { entity_id: ready.entity_id })}>
           {#each ready.attributes.options || [] as o}<option value={o}>{o}</option>{/each}
         </select></label>
     {/if}
-    {#if target}
+    {#if target && show('target')}
       <div class="tg"><span>Charge target <b>{Math.round(target.state)}%</b></span>
         <Slider value={Number(target.state)} min={target.attributes.min ?? 0} max={target.attributes.max ?? 100} step={target.attributes.step ?? 5} height={30} color={C}
           onchange={(v) => callService('number', 'set_value', { value: v }, { entity_id: target.entity_id })} /></div>

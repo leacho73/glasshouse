@@ -15,17 +15,18 @@
       export_prev: find(/^sensor\.octopus_energy_electricity_.+_export_previous_accumulative_cost$/),
       solar_kwh: find(/^sensor\.myenergi_hub_.+_generated_today/),
     }),
+    sections: [{ key: 'cost', label: 'Cost', section: 'cost' }, { key: 'kwh', label: 'kWh' }, { key: 'avg', label: 'Avg rate' }, { key: 'export', label: 'Export' }, { key: 'solar', label: 'Solar' }, { key: 'yesterday', label: 'Yesterday' }, { key: 'split', label: 'Peak / off-peak bar' }, { key: 'chart', label: 'Half-hourly chart' }],
     fields: [
       { key: 'title', label: 'Title', type: 'text' },
       { key: 'cost', label: 'Accumulative cost (today)', type: 'entity', domain: 'sensor' },
-      { key: 'consumption', label: 'Accumulative consumption (today)', type: 'entity', domain: 'sensor' },
-      { key: 'peak_kwh', label: 'Peak consumption', type: 'entity', domain: 'sensor' },
-      { key: 'offpeak_kwh', label: 'Off-peak consumption', type: 'entity', domain: 'sensor' },
-      { key: 'prev_cost', label: 'Previous day cost', type: 'entity', domain: 'sensor' },
-      { key: 'export_kwh', label: 'Export today (kWh)', type: 'entity', domain: 'sensor' },
+      { key: 'consumption', label: 'Accumulative consumption (today)', type: 'entity', domain: 'sensor', section: 'kwh' },
+      { key: 'peak_kwh', label: 'Peak consumption', type: 'entity', domain: 'sensor', section: 'split' },
+      { key: 'offpeak_kwh', label: 'Off-peak consumption', type: 'entity', domain: 'sensor', section: 'split' },
+      { key: 'prev_cost', label: 'Previous day cost', type: 'entity', domain: 'sensor', section: 'yesterday' },
+      { key: 'export_kwh', label: 'Export today (kWh)', type: 'entity', domain: 'sensor', section: 'export' },
       { key: 'export_rate', label: 'Export rate', type: 'entity', domain: 'sensor' },
       { key: 'export_prev', label: 'Previous day export earnings', type: 'entity', domain: 'sensor' },
-      { key: 'solar_kwh', label: 'Solar generated today', type: 'entity', domain: 'sensor' },
+      { key: 'solar_kwh', label: 'Solar generated today', type: 'entity', domain: 'sensor', section: 'solar' },
     ],
   };
 </script>
@@ -34,6 +35,7 @@
   import { t, ent } from '../lib/tpl.js';
   import { money, pence, rateColor, ts, hm } from '../lib/octopus.js';
   let { props } = $props();
+  const show = (k) => !props.hide?.[k];
   let w = $state(400), h = $state(80);
   const n = (id) => { const v = Number(ent(id)?.state); return isNaN(v) ? null : v; };
   const costE = $derived(ent(props.cost));
@@ -53,24 +55,24 @@
 <div class="et">
   <div class="title">{t(props.title) || 'Electricity today'}{#if latest}<span class="dim">{' · '}to {hm(latest)}</span>{/if}</div>
   <div class="kpis">
-    <div><b>{money(cost)}</b><span>cost{#if costE?.attributes.standing_charge != null}{' ('}incl. {money(costE.attributes.standing_charge)} standing){/if}</span></div>
-    <div><b>{kwh != null ? kwh.toFixed(1) : '—'}</b><span>kWh imported</span></div>
-    <div><b>{avgRate != null ? pence(avgRate) : '—'}</b><span>avg / kWh</span></div>
-    {#if exportKwh != null}<div class="exp"><b>{exportKwh.toFixed(1)}</b><span>kWh exported{#if exportEarn != null}{' · '}{money(exportEarn)}{/if}</span></div>{/if}
-    {#if props.solar_kwh}<div class="sol"><b>{n(props.solar_kwh)?.toFixed(1) ?? '—'}</b><span>kWh solar</span></div>{/if}
-    {#if props.prev_cost}<div><b>{money(n(props.prev_cost))}</b><span>yesterday{#if props.export_prev}{' · '}export {money(n(props.export_prev))}{/if}</span></div>{/if}
+    {#if show('cost')}<div><b>{money(cost)}</b><span>cost{#if costE?.attributes.standing_charge != null}{' ('}incl. {money(costE.attributes.standing_charge)} standing){/if}</span></div>{/if}
+    {#if show('kwh')}<div><b>{kwh != null ? kwh.toFixed(1) : '—'}</b><span>kWh imported</span></div>{/if}
+    {#if show('avg')}<div><b>{avgRate != null ? pence(avgRate) : '—'}</b><span>avg / kWh</span></div>{/if}
+    {#if exportKwh != null && show('export')}<div class="exp"><b>{exportKwh.toFixed(1)}</b><span>kWh exported{#if exportEarn != null}{' · '}{money(exportEarn)}{/if}</span></div>{/if}
+    {#if props.solar_kwh && show('solar')}<div class="sol"><b>{n(props.solar_kwh)?.toFixed(1) ?? '—'}</b><span>kWh solar</span></div>{/if}
+    {#if props.prev_cost && show('yesterday')}<div><b>{money(n(props.prev_cost))}</b><span>yesterday{#if props.export_prev}{' · '}export {money(n(props.export_prev))}{/if}</span></div>{/if}
   </div>
-  {#if peak != null && off != null && peak + off > 0}
+  {#if peak != null && off != null && peak + off > 0 && show('split')}
     <div class="split"><div class="off" style="flex:{off}">{off.toFixed(1)} off-peak</div><div class="pk" style="flex:{Math.max(peak, (peak + off) * 0.12)}">{peak.toFixed(1)} peak</div></div>
   {/if}
-  <div class="chart" bind:clientWidth={w} bind:clientHeight={h}>
+  {#if show('chart')}<div class="chart" bind:clientWidth={w} bind:clientHeight={h}>
     <svg width={w} height={h}>
       {#each charges as c}
         <rect x={X(c.start)} y={h - 12 - (c.kwh / maxKwh) * (h - 14)} width={Math.max(1, X(c.end) - X(c.start) - 1.5)} height={(c.kwh / maxKwh) * (h - 14)} rx="2" fill={rateColor(c.rate)}><title>{hm(c.start)} {c.kwh} kWh · {pence(c.rate)}{' · '}£{c.cost}</title></rect>
       {/each}
       {#each [0, 6, 12, 18] as hr}<text x={X(day0 + hr * 36e5)} y={h} font-size="10" fill="currentColor" opacity=".5">{String(hr).padStart(2, '0')}</text>{/each}
     </svg>
-  </div>
+  </div>{/if}
 </div>
 
 <style>

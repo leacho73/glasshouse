@@ -9,10 +9,11 @@
       const p = z.replace(/^select\.(myenergi_zappi_\d+)_charge_mode$/, '$1');
       return { mode: z, status: `sensor.${p}_status`, plug: `sensor.${p}_plug_status`, session: `sensor.${p}_charge_added_session`, power: find(/^sensor\.myenergi_hub_.+_power_charging/) };
     },
+    sections: [{ key: 'status', label: 'Status', section: 'status' }, { key: 'power', label: 'Power', section: 'power' }, { key: 'modes', label: 'Mode buttons' }, { key: 'boosts', label: 'Boost buttons', section: 'boosts' }],
     fields: [
       { key: 'device', label: 'Device', type: 'select', options: ['zappi', 'eddi'] },
       { key: 'name', label: 'Name', type: 'text' },
-      { key: 'mode', label: 'Mode select (charge mode / operating mode)', type: 'entity', domain: 'select' },
+      { key: 'mode', label: 'Mode select (charge mode / operating mode)', type: 'entity', domain: 'select', section: 'modes' },
       { key: 'status', label: 'Status', type: 'entity', domain: 'sensor' },
       { key: 'plug', label: 'Plug status (Zappi)', type: 'entity', domain: 'sensor' },
       { key: 'power', label: 'Power', type: 'entity', domain: 'sensor' },
@@ -31,6 +32,7 @@
   import { callService } from '../lib/ha.svelte.js';
   import { stateText } from '../lib/entity.js';
   let { props } = $props();
+  const show = (k) => !props.hide?.[k];
   const zappi = $derived(props.device !== 'eddi');
   const mode = $derived(ent(props.mode));
   const status = $derived(ent(props.status)?.state);
@@ -48,25 +50,25 @@
     <span class="ic" class:on={active}><Icon icon={zappi ? 'mdi:ev-plug-type2' : 'mdi:water-boiler'} size="1.5em" /></span>
     <div class="t">
       <div class="title">{t(props.name) || (zappi ? 'Zappi' : 'Eddi')}</div>
-      <div class="dim">{status || '—'}{#if plug}{' · '}{plug}{/if}</div>
+      {#if show('status')}<div class="dim">{status || '—'}{#if plug}{' · '}{plug}{/if}</div>{/if}
     </div>
-    <div class="pw"><b>{power ? stateText(power) : '—'}</b>{#if props.session}<span>{stateText(ent(props.session))}{zappi ? ' session' : ' today'}</span>{/if}{#if props.temp}<span>{stateText(ent(props.temp))}</span>{/if}</div>
+    {#if show('power')}<div class="pw"><b>{power ? stateText(power) : '—'}</b>{#if props.session}<span>{stateText(ent(props.session))}{zappi ? ' session' : ' today'}</span>{/if}{#if props.temp}<span>{stateText(ent(props.temp))}</span>{/if}</div>{/if}
   </div>
-  {#if mode}
+  {#if mode && show('modes')}
     <div class="modes" data-stop>
       {#each mode.attributes.options || [] as o}
         <button class:sel={o === mode.state} onclick={() => callService('select', 'select_option', { option: o }, target)}><Icon icon={MODE_ICON[o] || 'mdi:circle-medium'} size="1.1em" />{o}</button>
       {/each}
     </div>
   {/if}
-  <div class="boosts" data-stop>
+  {#if show('boosts')}<div class="boosts" data-stop>
     {#if zappi}
       {#each list(props.boosts) as k}<button onclick={() => callService('myenergi', 'myenergi_boost', { amount: Number(k) }, target)}>+{k} kWh</button>{/each}
     {:else}
       {#each list(props.eddi_minutes) as m}<button onclick={() => callService('myenergi', 'myenergi_eddi_boost', { target: props.eddi_target || 'Heater 1', time: Number(m) }, target)}>{m} min</button>{/each}
     {/if}
     <button class="stop" onclick={() => callService('myenergi', 'myenergi_stop_boost', {}, target)}>Stop boost</button>
-  </div>
+  </div>{/if}
 </div>
 
 <style>

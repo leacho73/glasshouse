@@ -6,13 +6,14 @@
   import { states } from '../lib/ha.svelte.js';
   import { changed, app } from '../lib/config.svelte.js';
   import { isTpl } from '../lib/tpl.js';
-  let { obj, f } = $props();
-  const set = (v) => { obj[f.key] = v; changed(); };
+  let { obj, f, onset, hide = null, ontoggle } = $props();
+  const set = (v) => { if (onset) return onset(v); obj[f.key] = v; changed(); };
   const hex = (v) => (/^#[0-9a-f]{6}$/i.test(v || '') ? v : '#7aa2ff');
 </script>
 
 <div class="field" class:wide={f.type === 'textarea' || f.type === 'entities' || f.type === 'cards'}>
-  {#if f.type !== 'bool'}<label for={f.key}>{f.label}{#if isTpl(obj[f.key])}<span class="tpl">template</span>{/if}</label>{/if}
+  {#if f.type !== 'bool'}<label for={f.key}>{f.label}{#if isTpl(obj[f.key])}<span class="tpl">template</span>{/if}
+    {#if ontoggle}<button type="button" class="eye" class:off={hide} title={hide ? 'Hidden on the card — click to show' : 'Shown on the card — click to hide'} onclick={ontoggle}><Icon icon={hide ? 'mdi:eye-off-outline' : 'mdi:eye'} size="15px" /></button>{/if}</label>{/if}
   {#if f.type === 'entity'}
     <EntityPicker bind:value={() => obj[f.key] || '', set} domain={f.domain} />
   {:else if f.type === 'entities'}
@@ -63,6 +64,9 @@
 <style>
   .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   label { font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+  .eye { margin-left: auto; background: none; border: 0; color: var(--accent); padding: 0 2px; display: grid; }
+  .eye.off { color: var(--muted); opacity: .6; }
+  .field:has(.eye.off) :global(input) { opacity: .5; }
   .tpl { background: rgba(122,162,255,.2); color: #a9c1ff; border-radius: 6px; padding: 0 5px; font-size: 10px; }
   .chk { color: var(--text); font-size: 13px; cursor: pointer; }
   .color { display: flex; gap: 6px; }

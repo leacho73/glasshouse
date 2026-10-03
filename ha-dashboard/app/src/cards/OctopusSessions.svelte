@@ -15,6 +15,7 @@
       interval: find(/^sensor\.octopus_energy_electricity_.+_current_interval_accumulative_consumption$/),
       demand: find(/^sensor\.octopus_energy_electricity_.+_current_demand$/),
     }),
+    sections: [{ key: 'points', label: 'Points', section: 'points' }, { key: 'live', label: 'Live session' }, { key: 'upcoming', label: 'Upcoming', section: 'upcoming' }, { key: 'history', label: '12-month stats' }],
     fields: [
       { key: 'title', label: 'Title', type: 'text' },
       { key: 'saving', label: 'Saving session events', type: 'entity', domain: 'event' },
@@ -27,7 +28,6 @@
       { key: 'interval', label: 'Current interval consumption', type: 'entity', domain: 'sensor' },
       { key: 'demand', label: 'Current demand (W)', type: 'entity', domain: 'sensor' },
       { key: 'upcoming', label: 'Upcoming items', type: 'number' },
-      { key: 'show_history', label: 'Show history stats', type: 'bool' },
     ],
   };
 </script>
@@ -40,6 +40,7 @@
   import { formatNumber } from '../lib/entity.js';
   import { sessions, KIND, hm, day, until } from '../lib/octopus.js';
   let { props } = $props();
+  const show = (k) => !props.hide?.[k];
   const now = $derived(clock.now);
   const all = $derived(sessions(props));
   const live = $derived(all.filter((s) => s.start <= now && now < s.end));
@@ -70,13 +71,13 @@
 <div class="ses">
   <div class="head">
     <div class="title">{t(props.title) || 'Octoplus'}</div>
-    {#if pts}
+    {#if pts && show('points')}
       <div class="pts"><Icon icon="mdi:star-four-points" size="1em" /> {formatNumber(pts.state, 0)} pts
         {#if pts.attributes.redeemable_points != null}<span class="dim">· £{(pts.attributes.redeemable_points / 800).toFixed(2)}</span>{/if}</div>
     {/if}
   </div>
 
-  {#each live as s}
+  {#each show('live') ? live : [] as s}
     {@const k = KIND[s.kind]}
     {@const f = (now - s.start) / (s.end - s.start)}
     {@const base = num(s.kind === 'free' || s.kind === 'powerup' ? props.free_baseline : props.saving_baseline)}
@@ -96,7 +97,7 @@
     </div>
   {/each}
 
-  <div class="list">
+  {#if show('upcoming')}<div class="list">
     {#if !next.length}<div class="empty dim">No upcoming sessions</div>{/if}
     {#each next as s (s.kind + s.id + s.start)}
       {@const k = KIND[s.kind]}
@@ -113,9 +114,9 @@
         {/if}
       </div>
     {/each}
-  </div>
+  </div>{/if}
 
-  {#if props.show_history}
+  {#if props.show_history !== false && show('history')}
     <div class="hist"><span class="dim">Last 12 months:</span>
       {#each Object.entries(stats) as [kind, o]}
         <div style="--c:{KIND[kind].color}"><Icon icon={KIND[kind].icon} size="1em" /> {o.n} {KIND[kind].plural}{#if o.points}{' · '}{formatNumber(o.points, 0)} pts{/if}</div>

@@ -14,17 +14,18 @@
       water: find(/^water_heater\.octopus_energy_heat_pump_/),
       zone: find(/^climate\.octopus_energy_heat_pump_/),
     }),
+    sections: [{ key: 'cop', label: 'Live COP', section: 'cop' }, { key: 'power', label: 'kW in' }, { key: 'heat', label: 'kW heat' }, { key: 'flow', label: 'Flow temp', section: 'flow' }, { key: 'scop', label: 'SCOP', section: 'scop' }, { key: 'chart', label: 'Graph' }, { key: 'water', label: 'Hot water', section: 'water' }, { key: 'boost', label: 'Boost button' }, { key: 'zone', label: 'Heating zone', section: 'zone' }],
     fields: [
       { key: 'title', label: 'Title', type: 'text' },
-      { key: 'power_in', label: 'Power input', type: 'entity', domain: 'sensor' },
-      { key: 'heat_out', label: 'Heat output', type: 'entity', domain: 'sensor' },
+      { key: 'power_in', label: 'Power input', type: 'entity', domain: 'sensor', section: 'power' },
+      { key: 'heat_out', label: 'Heat output', type: 'entity', domain: 'sensor', section: 'heat' },
       { key: 'cop', label: 'Live COP', type: 'entity', domain: 'sensor' },
       { key: 'scop', label: 'Lifetime SCOP', type: 'entity', domain: 'sensor' },
       { key: 'outdoor', label: 'Outdoor temperature', type: 'entity', domain: 'sensor' },
       { key: 'flow', label: 'Flow temperature', type: 'entity', domain: 'sensor' },
       { key: 'water', label: 'Hot water (water_heater)', type: 'entity', domain: 'water_heater' },
       { key: 'zone', label: 'Heating zone (climate)', type: 'entity', domain: 'climate' },
-      { key: 'boost_minutes', label: 'Hot water boost minutes', type: 'number' },
+      { key: 'boost_minutes', label: 'Hot water boost minutes', type: 'number', section: 'boost' },
     ],
   };
 </script>
@@ -38,6 +39,7 @@
   import { useHistory } from '../lib/history.svelte.js';
   import { app } from '../lib/config.svelte.js';
   let { props } = $props();
+  const show = (k) => !props.hide?.[k];
   const n = (id) => { const v = Number(ent(id)?.state); return isNaN(v) ? null : v; };
   const kw = (id) => { const e = ent(id); const v = n(id); if (v == null) return null; return (e.attributes.unit_of_measurement || '').toLowerCase() === 'w' ? v / 1000 : v; };
   const pin = $derived(kw(props.power_in));
@@ -56,26 +58,26 @@
   <div class="head">
     <span class="ic"><Icon icon="mdi:heat-pump" size="1.6em" /></span>
     <div class="t"><div class="title">{t(props.title) || 'Heat pump'}</div><div class="dim">{running ? 'Running' : 'Idle'}{#if n(props.outdoor) != null}{' · '}{formatNumber(n(props.outdoor), 1)}° outside{/if}</div></div>
-    {#if n(props.cop) != null}<div class="cop"><b>{n(props.cop).toFixed(2)}</b><span>COP</span></div>{/if}
+    {#if n(props.cop) != null && show('cop')}<div class="cop"><b>{n(props.cop).toFixed(2)}</b><span>COP</span></div>{/if}
   </div>
   <div class="kpis">
-    <div><b>{pin != null ? pin.toFixed(2) : '—'}</b><span>kW in</span></div>
-    <div class="heat"><b>{hout != null ? hout.toFixed(2) : '—'}</b><span>kW heat</span></div>
-    {#if props.flow}<div><b>{formatNumber(n(props.flow), 0)}°</b><span>flow</span></div>{/if}
-    {#if props.scop}<div><b>{n(props.scop)?.toFixed(2) ?? '—'}</b><span>SCOP</span></div>{/if}
+    {#if show('power')}<div><b>{pin != null ? pin.toFixed(2) : '—'}</b><span>kW in</span></div>{/if}
+    {#if show('heat')}<div class="heat"><b>{hout != null ? hout.toFixed(2) : '—'}</b><span>kW heat</span></div>{/if}
+    {#if props.flow && show('flow')}<div><b>{formatNumber(n(props.flow), 0)}°</b><span>flow</span></div>{/if}
+    {#if props.scop && show('scop')}<div><b>{n(props.scop)?.toFixed(2) ?? '—'}</b><span>SCOP</span></div>{/if}
   </div>
-  <div class="chart">
+  {#if show('chart')}<div class="chart">
     <Chart series={[{ points: hist.series[props.heat_out] || [], color: '#ff8a4c' }, { points: hist.series[props.power_in] || [], color: '#7aa2ff' }]} hours={24} strokeWidth={1.8} />
-  </div>
+  </div>{/if}
   <div class="row" data-stop>
-    {#if wh}
+    {#if wh && show('water')}
       <button class="wh" onclick={() => (app.popup = { entity: wh.entity_id })}>
         <Icon icon="mdi:water-boiler" size="1.3em" />
         <span><b>{formatNumber(wh.attributes.current_temperature, 1)}°</b>{#if (wh.attributes.temperature ?? wh.attributes.target_temp_high) != null}{' / '}{formatNumber(wh.attributes.temperature ?? wh.attributes.target_temp_high, 0)}°{/if} <span class="dim">{(wh.attributes.operation_mode || wh.state).replace(/_/g, ' ')}</span></span>
       </button>
-      <button class="boost" onclick={boost}><Icon icon="mdi:rocket-launch" size="1.1em" /> Boost</button>
+      {#if show('boost')}<button class="boost" onclick={boost}><Icon icon="mdi:rocket-launch" size="1.1em" /> Boost</button>{/if}
     {/if}
-    {#if zone}
+    {#if zone && show('zone')}
       <button class="wh" onclick={() => (app.popup = { entity: zone.entity_id })}><Icon icon="mdi:radiator" size="1.3em" /><span><b>{formatNumber(zone.attributes.current_temperature, 1)}°</b> <span class="dim">{zone.state}</span></span></button>
     {/if}
   </div>

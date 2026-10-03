@@ -91,12 +91,14 @@ export function fromFusion(db, { energy = true } = {}) {
         groups.forEach((g, i) => {
           const x = 20 + i * (gw + GAP * 2);
           let gy = y;
+          // Each room (heading + its cards) is a group, so it drags as one.
+          const group = uid();
           if (g.name) {
-            out.push({ card: add('markdown', { content: `### ${g.name}` }, { style: { ...CLEAR, padding: '0 4' } }), x, y: gy, w: gw, h: 30 });
+            out.push({ card: add('markdown', { content: `### ${g.name}` }, { style: { ...CLEAR, padding: '0 4' } }), x, y: gy, w: gw, h: 30, group });
             gy += 34;
           }
           const r = column(g.sections || g.items || (g.type ? [g] : []), x, gy, gw);
-          out.push(...r.out);
+          out.push(...r.out.map((p) => ({ ...p, group })));
           maxY = Math.max(maxY, r.y);
         });
         y = maxY + GAP;
@@ -140,41 +142,30 @@ export function fromFusion(db, { energy = true } = {}) {
 
   const ICONS = { downstairs: 'mdi:sofa', upstairs: 'mdi:bed', garden: 'mdi:flower', outside: 'mdi:tree' };
   const sbW = db.sidebarWidth || 360;
-  for (const dev of Object.keys(DEVICES)) {
-    const width = dev === 'phone' ? 420 : dev === 'tablet' ? 1280 : 1600;
-    const sb = dev !== 'phone' && !db.hide_sidebar;
-    const mainW = width - (sb ? sbW : 0);
-    const zones = {};
-    (db.views || []).forEach((v, i) => {
-      const id = 'v' + i;
-      if (dev === 'tablet') cfg.views.push({ id, name: v.name || `View ${i + 1}`, icon: ICONS[(v.name || '').toLowerCase()] || 'mdi:view-dashboard' });
-      zones[id] = view(v, mainW);
-    });
-    const side = sidebar(db.sidebar, sb ? sbW : width);
-    if (sb) zones.sidebar = side.out;
-    else {
-      zones.sidebar = [];
-      // Phone: sidebar content goes above the first view.
-      const first = zones.v0 || (zones.v0 = []);
-      const bottom = first.reduce((m, p) => Math.max(m, p.y + p.h), 0) + GAP;
-      first.push(...side.out.map((p) => ({ ...p, y: p.y + bottom })));
-    }
-    cfg.layouts[dev] = { width, sidebar: { enabled: sb, side: 'left', width: sbW }, zones };
-  }
-  // Navigation, top of the sidebar (or top of each view on phones).
+  // One main (tablet) layout; desktop shows it scaled and phone reflows it automatically.
+  const width = 1280;
+  const sb = !db.hide_sidebar;
+  const mainW = width - (sb ? sbW : 0);
+  const zones = {};
+  (db.views || []).forEach((v, i) => {
+    const id = 'v' + i;
+    cfg.views.push({ id, name: v.name || `View ${i + 1}`, icon: ICONS[(v.name || '').toLowerCase()] || 'mdi:view-dashboard' });
+    zones[id] = view(v, mainW);
+  });
   const nav = add('nav', { direction: 'horizontal', show_icons: true, show_names: true }, { style: { padding: '6', radius: '18' } });
-  for (const [dev, l] of Object.entries(cfg.layouts)) {
-    if (l.sidebar.enabled) {
-      for (const p of l.zones.sidebar) p.y += 70;
-      l.zones.sidebar.unshift({ card: nav, x: 16, y: 16, w: l.sidebar.width - 32, h: 56 });
+  const side = sidebar(db.sidebar, sb ? sbW : width);
+  if (sb) zones.sidebar = [{ card: nav, x: 16, y: 16, w: sbW - 32, h: 56 }, ...side.out.map((p) => ({ ...p, y: p.y + 70 }))];
+  else {
+    zones.sidebar = [];
+    for (const v of cfg.views) {
+      for (const p of zones[v.id]) p.y += 70;
+      zones[v.id].unshift({ card: nav, x: 20, y: 12, w: mainW - 40, h: 56 });
     }
   }
+  cfg.layouts.tablet = { width, sidebar: { enabled: sb, side: 'left', width: sbW }, zones };
+  cfg.layouts.phone = { width: DEVICES.phone.width, mode: 'auto', sidebar: { enabled: false, side: 'left', width: 300 }, zones: { sidebar: [] } };
+  cfg.layouts.desktop = { width: DEVICES.desktop.width, mode: 'same', sidebar: { enabled: false, side: 'left', width: 300 }, zones: { sidebar: [] } };
   if (energy) addEnergy(cfg, add);
-  for (const l of Object.values(cfg.layouts)) if (!l.sidebar.enabled) for (const v of cfg.views) {
-    const z = (l.zones[v.id] ??= []);
-    for (const p of z) p.y += 72;
-    z.unshift({ card: nav, x: 16, y: 12, w: l.width - 32, h: 56 });
-  }
   return cfg;
 }
 
@@ -214,7 +205,7 @@ function addEnergy(cfg, add) {
   if (!items.length) return;
 
   cfg.views.push({ id: 'energy', name: 'Energy', icon: 'mdi:lightning-bolt' });
-  for (const l of Object.values(cfg.layouts)) {
+  for (const l of [cfg.layouts.tablet]) {
     const mainW = l.width - (l.sidebar.enabled ? l.sidebar.width : 0);
     const cols = mainW >= 1100 ? 3 : mainW >= 700 ? 2 : 1;
     const cw = Math.floor((mainW - 40 - GAP * (cols - 1)) / cols);

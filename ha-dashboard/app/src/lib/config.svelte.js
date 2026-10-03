@@ -1,11 +1,17 @@
-// Dashboard config: cards are defined once and placed per device layout.
-// Each device layout has a design width (the stage is scaled to fit the screen),
-// an optional sidebar, and per-zone placements ('sidebar' or a view id).
+import { toast } from './ha.svelte.js';
+// Dashboard config: cards are defined once and placed on layouts. The main
+// (tablet) layout is shown everywhere by default: desktop scales it, phone gets
+// an automatic single-column reflow. Either can be switched to a custom layout.
+// Each layout has a design width (the stage is scaled to fit the screen), an
+// optional sidebar, and per-zone placements ('sidebar' or a view id).
+import { reflow } from './reflow.js';
+
 export const DEVICES = {
-  tablet: { label: 'Tablet', width: 1280, sidebar: 300 },
-  phone: { label: 'Phone', width: 420, sidebar: 0 },
-  desktop: { label: 'Desktop', width: 1600, sidebar: 320 },
+  tablet: { label: 'Main', width: 1280, sidebar: 300 },
+  phone: { label: 'Phone', width: 420, sidebar: 0, mode: 'auto' },
+  desktop: { label: 'Desktop', width: 1600, sidebar: 320, mode: 'same' },
 };
+export const MODES = { same: 'Same as main (scaled)', auto: 'Automatic (single column)', custom: 'Custom layout' };
 export const GRID = 10;
 
 export const DEFAULT_THEME = {
@@ -71,14 +77,47 @@ export const app = $state({
   device: detectDevice(),
   view: (location.hash.slice(1) || 'home'),
   editing: false,
-  selected: null, // { zone, index }
+  selected: null, // { zone, index } — the primary selected card
+  multi: [], // extra indices selected (shift/ctrl-click or drag-select)
+  single: false, // edit one card of a group on its own
   popup: null, // { cardId } | { entity }
   dirty: false,
   saving: false,
   panel: null, // 'card' | 'theme' | 'views' | 'add'
 });
 
-export const layout = () => app.config.layouts[app.device];
+/** The layout a device actually shows (main, a reflow of main, or its own). */
+export function layout(dev = app.device) {
+  const ls = app.config.layouts;
+  const l = ls[dev];
+  if (dev === 'tablet' || l.mode === 'custom') return l;
+  if (l.mode === 'same') return ls.tablet;
+  return reflow(ls.tablet, l.width, app.config.views, app.config.cards);
+}
+
+/** Which stored layout edits on this device go to. */
+export const editTarget = (dev = app.device) => (dev === 'tablet' || app.config.layouts[dev].mode === 'custom' ? dev : app.config.layouts[dev].mode === 'same' ? 'tablet' : null);
+
+/** An automatic layout becomes custom the moment it's edited. */
+export function ensureEditable() {
+  if (editTarget() !== null) return;
+  const l = app.config.layouts[app.device];
+  const r = layout();
+  app.config.layouts[app.device] = { ...r, width: l.width, mode: 'custom' };
+  toast(`${DEVICES[app.device].label} layout is now custom — switch back to automatic in Layout`);
+}
+
+export function setMode(dev, mode) {
+  const l = app.config.layouts[dev];
+  if (mode === 'custom' && l.mode !== 'custom') {
+    const r = $state.snapshot(layout(dev));
+    app.config.layouts[dev] = { ...r, width: l.mode === 'same' ? r.width : l.width, mode: 'custom' };
+  } else {
+    app.config.layouts[dev] = { width: DEVICES[dev].width, mode, sidebar: { enabled: false, side: 'left', width: 300 }, zones: { sidebar: [] } };
+  }
+  app.selected = null;
+  changed();
+}
 
 export async function load() {
   let cfg = null;
@@ -97,6 +136,7 @@ function init(cfg) {
   for (const [dev, d] of Object.entries(DEVICES)) {
     cfg.layouts[dev] ??= { width: d.width, sidebar: { enabled: false, side: 'left', width: 300 }, zones: { sidebar: [] } };
     cfg.layouts[dev].zones.sidebar ??= [];
+    if (dev !== 'tablet') cfg.layouts[dev].mode ??= d.mode;
   }
   cfg.theme = { ...DEFAULT_THEME, ...cfg.theme };
   for (const c of Object.values(cfg.cards)) normalise(c);
@@ -154,19 +194,23 @@ export async function undoLast() {
 export function setDevice(d) {
   app.device = d;
   app.selected = null;
+  app.multi = [];
   localStorage.setItem('hd-device', d);
 }
 
 export function setView(id) {
   app.view = id;
   app.selected = null;
+  app.multi = [];
   history.replaceState(null, '', '#' + id);
 }
 
-export function zoneList(zone) {
-  const z = layout().zones;
-  return (z[zone] ??= []);
+export function zoneList(zone, l = layout()) {
+  return (l.zones[zone] ??= []);
 }
+
+/** Stored layouts that hold their own placements (main + any custom ones). */
+const storedLayouts = () => Object.entries(app.config.layouts).filter(([dev, l]) => dev === 'tablet' || l.mode === 'custom').map(([, l]) => l);
 
 export function selectedPlacement() {
   const s = app.selected;
@@ -179,20 +223,33 @@ export function selectedCard() {
   return p ? app.config.cards[p.card] : null;
 }
 
+// New cards go on every stored layout (at the bottom), so they show on all devices.
+function placeEverywhere(cardId, zone, size) {
+  ensureEditable();
+  const here = layout();
+  for (const l of new Set([here, ...storedLayouts()])) {
+    const z = zone === 'sidebar' && !l.sidebar.enabled ? app.view : zone;
+    const list = zoneList(z, l);
+    const y = list.reduce((m, p) => Math.max(m, p.y + p.h), 0) + GRID * 2;
+    const w = Math.min(size.w, zoneWidth(z, l) - GRID * 4);
+    list.push({ card: cardId, x: GRID * 2, y, w, h: size.h });
+  }
+  const list = zoneList(zone, here);
+  app.selected = { zone, index: list.length - 1 };
+  app.multi = [];
+}
+
 export function addCard(type, meta, zone = app.view) {
   const id = uid();
   app.config.cards[id] = normalise({ id, type, props: { ...structuredClone(meta.defaults || {}), ...(meta.autofill?.() || {}) } });
-  const list = zoneList(zone);
-  const y = list.reduce((m, p) => Math.max(m, p.y + p.h), 0) + (list.length ? GRID * 2 : GRID * 2);
-  const w = Math.min(meta.size?.w || 200, zoneWidth(zone) - GRID * 4);
-  list.push({ card: id, x: GRID * 2, y, w, h: meta.size?.h || 120 });
-  app.selected = { zone, index: list.length - 1 };
+  placeEverywhere(id, zone, { w: meta.size?.w || 200, h: meta.size?.h || 120 });
   app.panel = 'card';
   changed();
   return id;
 }
 
 export function placeExisting(cardId, zone = app.view) {
+  ensureEditable();
   const list = zoneList(zone);
   const y = list.reduce((m, p) => Math.max(m, p.y + p.h), 0) + GRID * 2;
   list.push({ card: cardId, x: GRID * 2, y, w: 240, h: 140 });
@@ -200,22 +257,60 @@ export function placeExisting(cardId, zone = app.view) {
   changed();
 }
 
-export function zoneWidth(zone) {
-  const l = layout();
+export function zoneWidth(zone, l = layout()) {
   const sb = l.sidebar.enabled ? l.sidebar.width : 0;
   return zone === 'sidebar' ? sb : l.width - sb;
 }
 
+/** Indices (in the selected zone) of everything that moves together. */
+export function selectionSet() {
+  const s = app.selected;
+  if (!s) return [];
+  if (app.multi.length > 1) return [...app.multi];
+  const list = layout().zones[s.zone] || [];
+  const g = list[s.index]?.group;
+  if (!g || app.single) return [s.index];
+  return list.map((p, i) => (p.group === g ? i : -1)).filter((i) => i >= 0);
+}
+
+/** Unplace removes from this layout only; delete removes the card everywhere. */
 export function removeSelected(deleteCard = false) {
   const s = app.selected;
   if (!s) return;
-  const [p] = zoneList(s.zone).splice(s.index, 1);
+  ensureEditable();
+  const list = zoneList(s.zone);
+  const idx = selectionSet().sort((a, b) => b - a);
+  const ids = idx.map((i) => list[i].card);
+  for (const i of idx) list.splice(i, 1);
   app.selected = null;
-  if (deleteCard && p && !isPlacedAnywhere(p.card)) delete app.config.cards[p.card];
+  app.multi = [];
+  if (deleteCard) {
+    for (const l of Object.values(app.config.layouts)) for (const [z, zl] of Object.entries(l.zones)) l.zones[z] = zl.filter((p) => !ids.includes(p.card));
+    for (const id of ids) delete app.config.cards[id];
+  }
+  changed();
+}
+
+export function groupSelected() {
+  ensureEditable();
+  const list = zoneList(app.selected.zone);
+  const g = uid();
+  for (const i of selectionSet()) list[i].group = g;
+  app.multi = [];
+  app.single = false;
+  changed();
+}
+
+export function ungroupSelected() {
+  ensureEditable();
+  const list = zoneList(app.selected.zone);
+  for (const i of selectionSet()) delete list[i].group;
+  app.multi = [];
   changed();
 }
 
 export function duplicateSelected() {
+  ensureEditable();
   const p = selectedPlacement();
   const card = selectedCard();
   if (!p || !card) return;
@@ -233,7 +328,8 @@ export function isPlacedAnywhere(cardId) {
 }
 
 export function copyLayout(from) {
-  const src = $state.snapshot(app.config.layouts[from]);
+  ensureEditable();
+  const src = $state.snapshot(layout(from));
   const dst = layout();
   const scale = dst.width / src.width;
   dst.sidebar = { ...src.sidebar };

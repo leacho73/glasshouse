@@ -1,5 +1,5 @@
 name: HA Dashboard
-version: "0.3.0"
+version: "0.4.0"
 slug: ha_dashboard
 description: Fast, free-layout drag-and-drop dashboard with templated, styleable cards
 url: https://github.com/leacho73/ha-dashboard

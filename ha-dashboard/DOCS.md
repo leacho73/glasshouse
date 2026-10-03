@@ -5,7 +5,9 @@ Open **Dashboard** in the HA sidebar. Press the faint pencil (top-right) or **E*
 - **Add** cards from the panel; drag to move (between sidebar and main area too), drag any edge/corner to resize. Shift = 1px precision, arrows nudge, Delete, Ctrl+D duplicate, Ctrl+Z undo.
 - **Card → Content / Style / Actions / Size**: any text field can be an HA template (`{{ states('sensor.x') }}`), including colours and styling.
 - **Actions**: tap/hold → toggle, more-info pop-up, pop-up of other cards, navigate, service call, URL.
-- **Layout**: separate layouts for tablet / phone / desktop; pin a screen with `?device=tablet`. Copy one layout to another.
+- **Layout**: one main layout shows on every device — desktop scales it, phone gets an automatic single-column version. Give phone or desktop its own custom layout if you want (Layout tab, or just start dragging on that device). New cards are added to every layout. Pin a screen with `?device=phone` / `desktop`.
+- **Groups**: rooms move as one. Double-tap a card to move it alone; Shift/Ctrl-click or drag a box to select several, then Group (Ctrl+G), align or size them together.
+- **Show / hide parts** of bigger cards (EV, Octopus, heat pump…) with the chips at the top of Content or the eye next to each field.
 - **Theme**: colours, fonts (Google Fonts URL), card glass/blur (set blur 0 on slow tablets), global CSS.
 
 Config is stored in the add-on's `/data/dashboard.json` (Layout → Export for a backup).

@@ -10,14 +10,15 @@
       const s = (x) => `${p}_${x}`;
       return { soc, range: s('range'), charging: s('charging_state'), power: s('charging_power'), target: s('target_state_of_charge'), remaining: s('remaining_charge_time'), plug: s('plug_state').replace('sensor.', 'binary_sensor.'), lock: s('doors_lock').replace('sensor.', 'binary_sensor.'), climate: s('climatisation').replace('sensor.', 'climate.'), mileage: s('mileage') };
     },
+    sections: [{ key: 'ring', label: 'Battery ring' }, { key: 'range', label: 'Range', section: 'range' }, { key: 'status', label: 'Charging status' }, { key: 'plug', label: 'Plug', section: 'plug' }, { key: 'lock', label: 'Lock', section: 'lock' }, { key: 'climate', label: 'Climate', section: 'climate' }, { key: 'mileage', label: 'Mileage', section: 'mileage' }, { key: 'image', label: 'Car image', section: 'image' }],
     fields: [
       { key: 'name', label: 'Name', type: 'text' },
       { key: 'soc', label: 'Battery %', type: 'entity', domain: 'sensor' },
       { key: 'range', label: 'Range', type: 'entity', domain: 'sensor' },
-      { key: 'target', label: 'Target %', type: 'entity', domain: ['sensor', 'number'] },
-      { key: 'charging', label: 'Charging state', type: 'entity', domain: 'sensor' },
-      { key: 'power', label: 'Charging power', type: 'entity', domain: 'sensor' },
-      { key: 'remaining', label: 'Remaining charge time', type: 'entity', domain: 'sensor' },
+      { key: 'target', label: 'Target %', type: 'entity', domain: ['sensor', 'number'], section: 'status' },
+      { key: 'charging', label: 'Charging state', type: 'entity', domain: 'sensor', section: 'status' },
+      { key: 'power', label: 'Charging power', type: 'entity', domain: 'sensor', section: 'status' },
+      { key: 'remaining', label: 'Remaining charge time', type: 'entity', domain: 'sensor', section: 'status' },
       { key: 'plug', label: 'Plugged in', type: 'entity', domain: 'binary_sensor' },
       { key: 'lock', label: 'Locked (doors lock)', type: 'entity', domain: ['binary_sensor', 'lock'] },
       { key: 'climate', label: 'Climatisation', type: 'entity', domain: 'climate' },
@@ -33,6 +34,7 @@
   import { callService, haImage } from '../lib/ha.svelte.js';
   import { stateText, formatNumber } from '../lib/entity.js';
   let { props } = $props();
+  const show = (k) => !props.hide?.[k];
   const soc = $derived(Number(ent(props.soc)?.state));
   const tgt = $derived(Number(ent(props.target)?.state));
   const charging = $derived(/charg/i.test(ent(props.charging)?.state || '') && !/not|complete|error/i.test(ent(props.charging)?.state || ''));
@@ -46,30 +48,30 @@
 </script>
 
 <div class="ev">
-  <div class="ring">
+  {#if show('ring')}<div class="ring">
     <svg viewBox="0 0 100 100">
       <circle cx="50" cy="50" r={R} fill="none" stroke="rgba(255,255,255,.08)" stroke-width="8" />
       {#if !isNaN(tgt)}<circle cx="50" cy="50" r={R} fill="none" stroke="rgba(255,255,255,.18)" stroke-width="8" stroke-dasharray="1.2 {C}" stroke-dashoffset={-C * (tgt / 100) + 0.6} transform="rotate(-90 50 50)" />{/if}
       <circle cx="50" cy="50" r={R} fill="none" style="stroke:{color};transition:stroke-dasharray .6s" stroke-width="8" stroke-linecap="round" stroke-dasharray="{isNaN(soc) ? 0 : (C * soc) / 100} {C}" transform="rotate(-90 50 50)" class:pulse={charging} />
     </svg>
     <div class="pct">{isNaN(soc) ? '—' : Math.round(soc) + '%'}{#if charging}<Icon icon="mdi:lightning-bolt" size=".7em" style="color:{color}" />{/if}</div>
-  </div>
+  </div>{/if}
   <div class="info">
     <div class="name">{name}</div>
-    {#if props.range}<div class="range">{formatNumber(ent(props.range)?.state, 0)} <span>{ent(props.range)?.attributes.unit_of_measurement || ''}</span></div>{/if}
-    <div class="dim">
+    {#if props.range && show('range')}<div class="range">{formatNumber(ent(props.range)?.state, 0)} <span>{ent(props.range)?.attributes.unit_of_measurement || ''}</span></div>{/if}
+    {#if show('status')}<div class="dim">
       {#if charging}Charging {props.power ? stateText(ent(props.power)) : ''}{#if props.remaining && Number(ent(props.remaining)?.state)}{' · '}{Math.floor(ent(props.remaining).state / 60)}h {ent(props.remaining).state % 60}m left{/if}
       {:else}{human(ent(props.charging)?.state) || ''}{/if}
       {#if !isNaN(tgt)}{' · '}target {tgt}%{/if}
-    </div>
+    </div>{/if}
     <div class="chips" data-stop>
-      {#if plug}<span class="chip" class:on={plug.state === 'on'}><Icon icon={plug.state === 'on' ? 'mdi:power-plug' : 'mdi:power-plug-off'} size="1em" />{plug.state === 'on' ? 'Plugged' : 'Unplugged'}</span>{/if}
-      {#if lock}<span class="chip" class:warn={lock.state === 'on' && lock.entity_id.startsWith('binary_sensor')}><Icon icon={lock.state === 'on' ? 'mdi:lock-open-variant' : 'mdi:lock'} size="1em" />{lock.entity_id.startsWith('binary_sensor') ? (lock.state === 'on' ? 'Unlocked' : 'Locked') : stateText(lock)}</span>{/if}
-      {#if clim}<button class="chip" class:on={clim.state !== 'off'} onclick={() => callService('climate', clim.state === 'off' ? 'turn_on' : 'turn_off', {}, { entity_id: clim.entity_id })}><Icon icon="mdi:fan" size="1em" />{clim.state === 'off' ? 'Climate' : 'Climate on'}</button>{/if}
+      {#if plug && show('plug')}<span class="chip" class:on={plug.state === 'on'}><Icon icon={plug.state === 'on' ? 'mdi:power-plug' : 'mdi:power-plug-off'} size="1em" />{plug.state === 'on' ? 'Plugged' : 'Unplugged'}</span>{/if}
+      {#if lock && show('lock')}<span class="chip" class:warn={lock.state === 'on' && lock.entity_id.startsWith('binary_sensor')}><Icon icon={lock.state === 'on' ? 'mdi:lock-open-variant' : 'mdi:lock'} size="1em" />{lock.entity_id.startsWith('binary_sensor') ? (lock.state === 'on' ? 'Unlocked' : 'Locked') : stateText(lock)}</span>{/if}
+      {#if clim && show('climate')}<button class="chip" class:on={clim.state !== 'off'} onclick={() => callService('climate', clim.state === 'off' ? 'turn_on' : 'turn_off', {}, { entity_id: clim.entity_id })}><Icon icon="mdi:fan" size="1em" />{clim.state === 'off' ? 'Climate' : 'Climate on'}</button>{/if}
     </div>
-    {#if props.mileage}<div class="dim small">{formatNumber(ent(props.mileage)?.state, 0)} {ent(props.mileage)?.attributes.unit_of_measurement || ''}</div>{/if}
+    {#if props.mileage && show('mileage')}<div class="dim small">{formatNumber(ent(props.mileage)?.state, 0)} {ent(props.mileage)?.attributes.unit_of_measurement || ''}</div>{/if}
   </div>
-  {#if props.image}<img class="car" src={haImage(t(props.image))} alt="" />{/if}
+  {#if props.image && show('image')}<img class="car" src={haImage(t(props.image))} alt="" />{/if}
 </div>
 
 <style>

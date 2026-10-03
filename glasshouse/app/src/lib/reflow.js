@@ -44,10 +44,17 @@ export function reflow(master, width, views, cards) {
     };
     place(navs.map((p) => ({ ...p, h: 56 })), W);
     if (vi === 0) place(top.map((p) => ({ ...p, w: Math.max(p.w, W) })), W);
+    // Consecutive ungrouped cards flow together (so small ones can pair up);
+    // each group (room) is placed as its own block.
+    let loose = [];
+    const flushLoose = () => { if (loose.length) { place(loose, mainW); y += 6; loose = []; } };
     for (const block of blocks(master.zones[v.id] || [])) {
+      if (block.length === 1 && !block[0].group) { loose.push(block[0]); continue; }
+      flushLoose();
       place(block, mainW);
       y += 6;
     }
+    flushLoose();
     if (vi === 0) place(rest, master.sidebar.width * 3.4);
     zones[v.id] = out;
   });

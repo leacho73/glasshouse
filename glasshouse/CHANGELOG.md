@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.1
+
+- Phone layout: small cards that sit side by side on the main layout (e.g. two thermostats) now pair up two-per-row on phones instead of stacking at half width.
+- New README with screenshots.
+
 ## 0.11.0
 
 - **Live updates**: when you save changes on one screen, every other open screen (wall tablets, phones…) picks up the new layout within a second — no more reloading Fully Kiosk. Screens that are in edit mode are left alone.

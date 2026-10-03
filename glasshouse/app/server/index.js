@@ -5,6 +5,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
+import crypto from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
 import * as mdi from '@mdi/js';
 import { fusionDashboard } from './fusion.js';
@@ -54,6 +55,7 @@ const server = http.createServer(async (req, res) => {
         JSON.parse(body);
         fs.writeFileSync(CONFIG + '.tmp', body);
         fs.renameSync(CONFIG + '.tmp', CONFIG);
+        broadcast({ type: 'config', from: req.headers['x-client'] || '' });
         return send(res, 200, '{"ok":true}');
       }
     }
@@ -96,7 +98,20 @@ const server = http.createServer(async (req, res) => {
 // Websocket proxy: authenticate to HA server-side, then tell the browser auth_ok
 // and pipe frames both ways. The browser never sees the token.
 const wss = new WebSocketServer({ noServer: true, perMessageDeflate: true });
+// Live channel: tells every open screen when the layout is saved (so it reloads
+// it) and which build is running (so screens reload after an add-on update).
+const BUILD = fs.existsSync(path.join(DIST, 'index.html')) ? crypto.createHash('sha1').update(fs.readFileSync(path.join(DIST, 'index.html'))).digest('hex').slice(0, 12) : 'dev';
+const live = new WebSocketServer({ noServer: true });
+function broadcast(msg) {
+  const data = JSON.stringify(msg);
+  for (const c of live.clients) if (c.readyState === WebSocket.OPEN) c.send(data);
+}
+setInterval(() => broadcast({ type: 'ping' }), 30000);
+
 server.on('upgrade', (req, socket, head) => {
+  if (req.url.split('?')[0].endsWith('/api/live')) {
+    return live.handleUpgrade(req, socket, head, (ws) => ws.send(JSON.stringify({ type: 'hello', build: BUILD })));
+  }
   if (!req.url.split('?')[0].endsWith('/api/websocket')) return socket.destroy();
   wss.handleUpgrade(req, socket, head, (client) => {
     const ha = new WebSocket(HA_URL.replace(/^http/, 'ws') + '/api/websocket', { perMessageDeflate: true });

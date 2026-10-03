@@ -7,6 +7,8 @@
   import { conn, toasts, watchEntities, states } from './lib/ha.svelte.js';
   import { GRID } from './lib/config.svelte.js';
   import { setKiosk } from './lib/kiosk.js';
+  import { connectLive } from './lib/live.js';
+  import { reloadFromServer } from './lib/config.svelte.js';
 
   let vw = $state(innerWidth);
   const autoDevice = detectDevice();
@@ -82,16 +84,8 @@
     }
   }
 
-  // Keep the wall tablet awake-friendly: reload config if it changes elsewhere (every 60s while idle viewing).
-  $effect(() => {
-    if (app.editing) return;
-    const i = setInterval(async () => {
-      if (app.editing || app.dirty) return;
-      const remote = await fetch('api/config').then((r) => r.text()).catch(() => null);
-      if (remote && remote !== 'null' && remote !== JSON.stringify($state.snapshot(app.config))) load();
-    }, 60000);
-    return () => clearInterval(i);
-  });
+  // Live: reload the layout as soon as another screen saves, and the page after an add-on update.
+  connectLive({ onConfig: reloadFromServer, canReload: () => !app.editing && !app.dirty });
 </script>
 
 <svelte:window bind:innerWidth={vw} onkeydown={key} onhashchange={() => { const v = location.hash.slice(1); if (v) app.view = v; }} />

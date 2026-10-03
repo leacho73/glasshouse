@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.0
+
+- **Live updates**: when you save changes on one screen, every other open screen (wall tablets, phones…) picks up the new layout within a second — no more reloading Fully Kiosk. Screens that are in edit mode are left alone.
+- After an add-on update, open screens reload themselves onto the new version.
+
 ## 0.10.2
 
 - Fixed: high-resolution tablets were detected as desktops (they report a wide screen), so they used the desktop's "actual size, centred" setting and showed a gap down each side. Touch-only screens are now always treated as tablets. Layout → Devices shows which device the current screen is using.

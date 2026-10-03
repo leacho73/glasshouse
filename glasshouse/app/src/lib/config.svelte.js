@@ -5,6 +5,7 @@ import { toast } from './ha.svelte.js';
 // Each layout has a design width (the stage is scaled to fit the screen), an
 // optional sidebar, and per-zone placements ('sidebar' or a view id).
 import { reflow } from './reflow.js';
+import { clientId } from './live.js';
 
 export const DEVICES = {
   tablet: { label: 'Main', width: 1280, sidebar: 300, display: 'width' },
@@ -128,9 +129,18 @@ export function setMode(dev, mode) {
 export async function load() {
   let cfg = null;
   try {
-    cfg = await fetch('api/config').then((r) => r.json());
+    cfg = await fetch('api/config', { cache: 'no-store' }).then((r) => r.json());
   } catch {}
   init(cfg ?? starter());
+}
+
+/** Another screen saved: pick up its layout unless we're editing here. */
+export async function reloadFromServer() {
+  if (app.editing || app.dirty) return;
+  try {
+    const cfg = await fetch('api/config', { cache: 'no-store' }).then((r) => r.json());
+    if (cfg && !app.editing && !app.dirty) init(cfg);
+  } catch {}
 }
 
 export function importConfig(cfg) {
@@ -175,7 +185,7 @@ export async function save() {
   app.saving = true;
   const body = JSON.stringify($state.snapshot(app.config));
   try {
-    const r = await fetch('api/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body });
+    const r = await fetch('api/config', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Client': clientId }, body });
     if (!r.ok) throw new Error('save failed');
     if (lastSaved && lastSaved !== body) undoStack.push(lastSaved);
     if (undoStack.length > 50) undoStack.shift();
@@ -195,7 +205,7 @@ export async function undoLast() {
   app.selected = null;
   app.config = JSON.parse(prev);
   lastSaved = prev;
-  await fetch('api/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: prev });
+  await fetch('api/config', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Client': clientId }, body: prev });
 }
 
 export function setDevice(d) {

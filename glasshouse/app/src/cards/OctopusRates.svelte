@@ -50,7 +50,14 @@
   // Octoplus sessions change what electricity really costs: Free Electricity and
   // joined Power Ups make it free; in a joined Saving Session every kWh you use
   // also costs the reward you'd have earned (800 Octopoints = £1).
-  const octo = $derived(sessions(props));
+  // Back-to-back events of the same kind (e.g. two 1-hour free sessions) as one.
+  // Power Ups Octopus only lists as available (often not for your region) are left out.
+  const octo = $derived(sessions(props).filter((x) => x.joined || x.kind !== 'powerup').reduce((out, x) => {
+    const last = out[out.length - 1];
+    if (last && last.kind === x.kind && last.joined === x.joined && last.end === x.start) out[out.length - 1] = { ...last, end: x.end };
+    else out.push({ ...x });
+    return out;
+  }, []));
   const live = $derived(octo.filter((x) => x.joined && x.kind !== 'powerdown'));
   const all = $derived(raw.map((r) => {
     const x = live.find((q) => q.start < r.end && q.end > r.start);

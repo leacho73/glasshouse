@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.16.1
+
+- Octopus rates: Power Ups that Octopus only lists as *available* (often for other regions) are no longer shown as if they're happening. Only Power Ups you're in count.
+- Octopus rates: back-to-back sessions show as one, e.g. two 1-hour Free Electricity sessions read "11:00–13:00" instead of just the first hour.
+
 ## 0.16.0
 
 - **Hot tub card** (Add → Controls): a top-down tub that warms in colour with the water, ripples and bubbles while the pumps run, steams while heating and glows with the light on. Target temperature − / +, pump (Off → Low → High) and light buttons, WaterCare mode, economy and standby, status lights (heating, circulation, ozone, filter cycle, winter mode) and maintenance reminders (rinse / clean filter, change water) that turn amber when due and red when overdue. Gecko (in.touch2) spas are detected automatically.

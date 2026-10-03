@@ -49,6 +49,16 @@ First-class cards for UK energy setups, with entities **auto-detected** when you
 
 Built for the [Octopus Energy](https://github.com/BottlecapDave/HomeAssistant-OctopusEnergy), [myenergi](https://github.com/CJNE/ha-myenergi), [Predbat](https://github.com/springfall2008/batpred) and SolarEdge Modbus Multi integrations. Every card lets you show or hide each of its sections.
 
+## Around the house
+
+<table><tr>
+<td width="50%"><img src="docs/screenshots/hottub.webp" alt="Hot tub card"><br><sub><b>Hot tub</b>: water that warms in colour, bubbles with the pumps and steams while heating; target − / +, pumps, light, WaterCare mode, status lights and filter / water-change reminders (Gecko spas detected automatically).</sub></td>
+<td width="50%"><img src="docs/screenshots/washer.webp" alt="Washing machine card"><br><sub><b>Washing machine</b>: a drum that turns (fast on the spin), time left and finish time, phase, spin and temperature, leak sensor, Pause / Stop.</sub><br><br>
+<img src="docs/screenshots/dishwasher.webp" alt="Dishwasher card"><br><sub><b>Dishwasher</b>: programme, progress, time left, salt / rinse aid low. <b>Tumble dryer</b> works the same way.</sub></td>
+</tr></table>
+
+Detects Samsung SmartThings washers, Home Connect (Bosch / Neff / Siemens) dishwashers, hOn (Haier / Candy / Hoover) dryers and Gecko (in.touch2) hot tubs; any other appliance can be set up by picking its entities.
+
 ## Edit in the browser
 
 <p align="center"><img src="docs/screenshots/edit.webp" alt="Editing a card" width="900"></p>

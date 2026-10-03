@@ -5,6 +5,7 @@
 import { cards as registry } from './registry.js';
 import { DEFAULT_THEME, DEVICES } from './config.svelte.js';
 import { states } from './ha.svelte.js';
+import { myenergiPower } from './octopus.js';
 
 const GAP = 12;
 let n = 0;
@@ -202,7 +203,7 @@ function addEnergy(cfg, add) {
   const f = (re) => [...states.keys()].find((k) => re.test(k)) || '';
   const pf = items.find((i) => i[0] === 'powerflow');
   const solar = f(/^sensor\..*solar.*(production|generation|pv).*_w$|^sensor\.myenergi_hub_.+_power_generation/);
-  if (solar) pf[1] = add('powerflow', { solar, grid: f(/^sensor\.myenergi_hub_.+_power_grid/), battery: f(/^sensor\.solaredge_b1_dc_power$/), battery_invert: true, battery_soc: f(/^sensor\.solaredge_b1_state_of_energy$/), ev: f(/^sensor\.myenergi_hub_.+_power_charging/), ev_label: 'Zappi' });
+  if (solar) pf[1] = add('powerflow', { solar, grid: f(/^sensor\.myenergi_hub_.+_power_grid/), battery: f(/^sensor\.solaredge_b1_dc_power$/), battery_invert: true, battery_soc: f(/^sensor\.solaredge_b1_state_of_energy$/), ev: myenergiPower(f(/^sensor\.myenergi_hub_.+_power_charging/)), ev_label: 'Zappi' });
   else items.splice(items.indexOf(pf), 1);
   if (!items.length) return;
 

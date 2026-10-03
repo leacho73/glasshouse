@@ -1,5 +1,5 @@
 <script module>
-  import { find } from '../lib/octopus.js';
+  import { find, myenergiPower } from '../lib/octopus.js';
   export const meta = {
     type: 'myenergi', name: 'Zappi / Eddi', icon: 'mdi:ev-plug-type2', category: 'Energy',
     size: { w: 400, h: 250 }, tap: 'none',
@@ -7,7 +7,7 @@
     autofill: () => {
       const z = find(/^select\.myenergi_zappi_.+_charge_mode$/);
       const p = z.replace(/^select\.(myenergi_zappi_\d+)_charge_mode$/, '$1');
-      return { mode: z, status: `sensor.${p}_status`, plug: `sensor.${p}_plug_status`, session: `sensor.${p}_charge_added_session`, power: find(/^sensor\.myenergi_hub_.+_power_charging/) };
+      return { mode: z, status: `sensor.${p}_status`, plug: `sensor.${p}_plug_status`, session: `sensor.${p}_charge_added_session`, power: myenergiPower(find(/^sensor\.myenergi_hub_.+_power_charging/), 'zappi', z) };
     },
     sections: [{ key: 'status', label: 'Status', section: 'status' }, { key: 'power', label: 'Power', section: 'power' }, { key: 'modes', label: 'Mode buttons' }, { key: 'boosts', label: 'Boost buttons', section: 'boosts' }],
     fields: [
@@ -37,7 +37,14 @@
   const mode = $derived(ent(props.mode));
   const status = $derived(ent(props.status)?.state);
   const plug = $derived(ent(props.plug)?.state);
-  const power = $derived(ent(props.power));
+  // Power as kW from 1 kW up (7.2 kW), watts below (420 W).
+  function kw(e) {
+    const v = Number(e.state);
+    if (!Number.isFinite(v)) return stateText(e);
+    const w = /^kw$/i.test(e.attributes.unit_of_measurement || '') ? v * 1000 : v;
+    return Math.abs(w) >= 1000 ? `${(w / 1000).toFixed(1)} kW` : `${Math.round(w)} W`;
+  }
+  const power = $derived(ent(myenergiPower(props.power, props.device === 'eddi' ? 'eddi' : 'zappi', props.mode || props.status)));
   const active = $derived(Number(power?.state) > 50);
   const C = $derived(zappi ? '#b48cff' : '#ff8a4c');
   const MODE_ICON = { Fast: 'mdi:flash', Eco: 'mdi:leaf', 'Eco+': 'mdi:solar-power', Stopped: 'mdi:stop', Normal: 'mdi:play', Boost: 'mdi:rocket-launch' };
@@ -52,7 +59,7 @@
       <div class="title">{t(props.name) || (zappi ? 'Zappi' : 'Eddi')}</div>
       {#if show('status')}<div class="dim">{status || '—'}{#if plug}{' · '}{plug}{/if}</div>{/if}
     </div>
-    {#if show('power')}<div class="pw"><b>{power ? stateText(power) : '—'}</b>{#if props.session}<span>{stateText(ent(props.session))}{zappi ? ' session' : ' today'}</span>{/if}{#if props.temp}<span>{stateText(ent(props.temp))}</span>{/if}</div>{/if}
+    {#if show('power')}<div class="pw"><b>{power ? kw(power) : '—'}</b>{#if props.session}<span>{stateText(ent(props.session))}{zappi ? ' session' : ' today'}</span>{/if}{#if props.temp}<span>{stateText(ent(props.temp))}</span>{/if}</div>{/if}
   </div>
   {#if mode && show('modes')}
     <div class="modes" data-stop>

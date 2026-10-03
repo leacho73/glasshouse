@@ -101,3 +101,15 @@ export function rateColor(v, { cheap = 0.1, peak = 0.25 } = {}) {
   if (v >= peak) return '#ff7a90';
   return '#ffc861';
 }
+
+// myenergi: the hub's "power charging" adds up every Zappi and Eddi (e.g. a 7 kW
+// car charge plus a 3 kW immersion reads 10 kW). Prefer the device's own reading.
+export const HUB_CHARGING = /^sensor\.myenergi_hub_.+_power_charging/;
+/** Template listing every Zappi / Eddi's own power sensor (so the dashboard can watch them). */
+export const MYENERGI_OWN = "{{ states.sensor | map(attribute='entity_id') | select('match', 'sensor[.]myenergi_(zappi|eddi)_[0-9]+_power_ct_internal_load$') | join(',') }}";
+export function myenergiPower(id, device = 'zappi', hint = '') {
+  if (!id || !HUB_CHARGING.test(id)) return id;
+  const serial = String(hint).match(new RegExp(`myenergi_${device}_(\\d+)`))?.[1];
+  const own = [...states.keys()].find((k) => new RegExp(`^sensor\\.myenergi_${device}_${serial || '\\d+'}_power_ct_internal_load$`).test(k));
+  return own || id;
+}

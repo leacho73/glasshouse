@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.16.2
+
+- Fixed: the Zappi / Eddi card and the power flow's EV figure used the myenergi hub's "power charging" sensor, which adds up every Zappi and Eddi (e.g. a 7 kW car charge plus a 3 kW immersion showed as 10 kW). They now use each device's own reading. Existing cards correct themselves; nothing to change.
+- Zappi / Eddi card shows power in kW (7.2 kW) from 1 kW up, and watts below.
+
 ## 0.16.1
 
 - Octopus rates: Power Ups that Octopus only lists as *available* (often for other regions) are no longer shown as if they're happening. Only Power Ups you're in count.

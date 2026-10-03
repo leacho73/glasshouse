@@ -4,7 +4,8 @@
   import Popup from './components/Popup.svelte';
   import Icon from './components/Icon.svelte';
   import { app, load, save, layout, DEVICES, detectDevice, setView, removeSelected, duplicateSelected, selectedPlacement, changed, undo, undoLast, selectionSet, ensureEditable, zoneList, groupSelected } from './lib/config.svelte.js';
-  import { conn, toasts, watchEntities, states } from './lib/ha.svelte.js';
+  import { conn, toasts, watchEntities, states, subscribe } from './lib/ha.svelte.js';
+  import { HUB_CHARGING, MYENERGI_OWN } from './lib/octopus.js';
   import { GRID } from './lib/config.svelte.js';
   import { setKiosk } from './lib/kiosk.js';
   import { connectLive } from './lib/live.js';
@@ -20,6 +21,8 @@
 
   // Subscribe only to entities the dashboard uses (all of them while editing, for pickers).
   let watchTimer;
+  let myenergiOwn = $state(null);
+  let askedMyenergi = false;
   $effect(() => {
     if (!app.config || !conn.connected) return;
     if (app.editing) return watchEntities(null);
@@ -29,6 +32,15 @@
       else if (v && typeof v === 'object') for (const x of Object.values(v)) walk(x);
     };
     walk(app.config.cards);
+    // Cards on the myenergi hub's combined charging sensor show the device's own
+    // reading instead: look up the Zappi / Eddi sensors once, then watch them.
+    if ([...ids].some((id) => HUB_CHARGING.test(id))) {
+      if (myenergiOwn == null && !askedMyenergi) {
+        askedMyenergi = true;
+        const stop = subscribe({ type: 'render_template', template: MYENERGI_OWN }, (ev) => { myenergiOwn = String(ev.result || ''); queueMicrotask(stop); });
+      }
+      for (const id of (myenergiOwn || '').split(',')) if (id) ids.add(id);
+    }
     if (app.popup?.entity) ids.add(app.popup.entity);
     // Members of light / switch groups, for "3/5 on" counts.
     for (const id of [...ids]) {

@@ -19,6 +19,7 @@
 </script>
 
 <script>
+  import { myenergiPower } from '../lib/octopus.js';
   import Icon from '../components/Icon.svelte';
   import { t, ent } from '../lib/tpl.js';
   let { props } = $props();
@@ -34,7 +35,7 @@
   const solar = $derived(Math.max(0, watts(props.solar) ?? 0));
   const grid = $derived((watts(props.grid) ?? 0) * (props.grid_invert ? -1 : 1));
   const batt = $derived((watts(props.battery) ?? 0) * (props.battery_invert ? -1 : 1));
-  const ev = $derived(Math.max(0, watts(props.ev) ?? 0));
+  const ev = $derived(Math.max(0, watts(myenergiPower(props.ev)) ?? 0));
   const home = $derived(props.home ? (watts(props.home) ?? 0) : Math.max(0, solar + grid + batt - ev));
   const soc = $derived(ent(props.battery_soc)?.state);
   const fmt = (w) => (Math.abs(w) >= 1000 ? (Math.abs(w) / 1000).toFixed(Math.abs(w) >= 10000 ? 0 : 1) + ' kW' : Math.round(Math.abs(w)) + ' W');

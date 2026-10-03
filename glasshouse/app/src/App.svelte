@@ -8,7 +8,8 @@
   import { GRID } from './lib/config.svelte.js';
   import { setKiosk } from './lib/kiosk.js';
   import { connectLive } from './lib/live.js';
-  import { reloadFromServer } from './lib/config.svelte.js';
+  import { param } from './lib/params.js';
+  import { reloadFromServer, startView } from './lib/config.svelte.js';
 
   let vw = $state(innerWidth);
   const autoDevice = detectDevice();
@@ -39,7 +40,9 @@
   });
 
   // Hide HA's header bar: per device (Layout tab) or ?kiosk / ?kiosk=0 in the URL.
-  const kioskParam = new URLSearchParams(location.search).get('kiosk');
+  const kioskParam = param('kiosk');
+  // ?noedit: no pencil and no E shortcut (wall tablets that shouldn't be edited).
+  const noEdit = param('noedit') != null && param('noedit') !== '0';
   $effect(() => {
     if (!app.config) return;
     const on = kioskParam != null ? kioskParam !== '0' : !!app.config.layouts[app.device]?.kiosk;
@@ -64,7 +67,7 @@
 
   function key(e) {
     if (e.target.closest('input,textarea,select,[contenteditable]')) return;
-    if (e.key === 'e' && !e.ctrlKey && !e.metaKey) return toggleEdit();
+    if (e.key === 'e' && !e.ctrlKey && !e.metaKey && !noEdit) return toggleEdit();
     if (!app.editing) return;
     if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); return undoLast(); }
     const p = selectedPlacement();
@@ -82,6 +85,20 @@
       for (const i of selectionSet()) list[i][mv[0]] = Math.max(0, list[i][mv[0]] + mv[1]);
       changed();
     }
+  }
+
+  // ?return=5: after 5 minutes without a touch, go back to this screen's own view
+  // (?view=, or the first view) and close any pop-up. For wall tablets.
+  const returnMins = Number(param('return'));
+  if (returnMins > 0) {
+    let last = Date.now();
+    for (const ev of ['pointerdown', 'keydown', 'wheel']) addEventListener(ev, () => (last = Date.now()), { capture: true, passive: true });
+    setInterval(() => {
+      if (!app.config || app.editing || Date.now() - last < returnMins * 60e3) return;
+      app.popup = null;
+      const home = startView();
+      if (home && app.view !== home) setView(home);
+    }, 10e3);
   }
 
   // Live: reload the layout as soon as another screen saves, and the page after an add-on update.
@@ -113,7 +130,7 @@
       <button title="Toggle panel" onclick={() => (app.panel = app.panel ? null : 'add')}><Icon icon="mdi:dock-right" size="1.2em" /></button>
       <span class="st">{app.saving ? 'Saving…' : app.dirty ? 'Unsaved' : 'Saved'}</span>
     </div>
-  {:else}
+  {:else if !noEdit}
     <button class="edit-fab" onclick={toggleEdit} aria-label="Edit dashboard"><Icon icon="mdi:pencil" size="1.1em" /></button>
   {/if}
 {/if}

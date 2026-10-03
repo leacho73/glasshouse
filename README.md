@@ -81,7 +81,18 @@ Button / tile · Light · Thermostat (draggable dial) · Media player (artwork, 
 2. Install **Glasshouse**, start it and turn on **Show in sidebar**.
 3. Open **Glasshouse** from the sidebar and press **E** to start building.
 
-Wall tablet tips: set **Layout → Main → Sizing** to *Fit the whole view on screen* and tick *Hide Home Assistant's header bar*, or add `?device=tablet&fit=screen&kiosk` to the tablet's URL.
+Wall tablet tips: set **Layout → Main → Sizing** to *Fit the whole view on screen* and tick *Hide Home Assistant's header bar*. Or add options to the tablet's URL:
+
+| Option | Does |
+|---|---|
+| `?device=tablet` / `phone` / `desktop` | Use that device's layout |
+| `?fit=screen` / `width` / `actual` | Fit the view on screen, fill the width, or actual size |
+| `?kiosk` | Hide Home Assistant's header bar |
+| `?view=Upstairs` | Open on this view (name or id) |
+| `?return=5` | Go back to that view after 5 minutes without a touch |
+| `?noedit` | Hide the edit pencil and the E shortcut |
+
+e.g. `…/glasshouse?view=Upstairs&return=5&noedit&fit=screen&kiosk`
 
 ## Develop
 

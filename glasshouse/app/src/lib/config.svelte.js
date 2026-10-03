@@ -1,3 +1,4 @@
+import { param } from './params.js';
 import { toast } from './ha.svelte.js';
 // Dashboard config: cards are defined once and placed on layouts. The main
 // (tablet) layout is shown everywhere by default: desktop scales it, phone gets
@@ -66,7 +67,7 @@ function starter() {
 }
 
 export function detectDevice() {
-  const q = new URLSearchParams(location.search).get('device');
+  const q = param('device');
   if (q && DEVICES[q]) return q;
   const saved = localStorage.getItem('hd-device');
   if (saved && DEVICES[saved]) return saved;
@@ -148,6 +149,10 @@ export function importConfig(cfg) {
   changed();
 }
 
+let firstInit = true;
+let homeView = null;
+/** This screen's own view: ?view= if given, else the first view. */
+export const startView = () => (app.config.views.some((v) => v.id === homeView) ? homeView : app.config.views[0]?.id);
 function init(cfg) {
   for (const [dev, d] of Object.entries(DEVICES)) {
     cfg.layouts[dev] ??= { width: d.width, sidebar: { enabled: false, side: 'left', width: 300 }, zones: { sidebar: [] } };
@@ -159,6 +164,14 @@ function init(cfg) {
   for (const c of Object.values(cfg.cards)) normalise(c);
   app.config = cfg;
   lastSaved = JSON.stringify(cfg);
+  // ?view= (a view's id or name) picks the starting view, e.g. upstairs tablets.
+  if (firstInit) {
+    const want = (param('view') || '').toLowerCase();
+    const v = want && cfg.views.find((x) => x.id.toLowerCase() === want || x.name.toLowerCase() === want);
+    if (v) app.view = v.id;
+    homeView = v?.id ?? null;
+  }
+  firstInit = false;
   if (!cfg.views.some((v) => v.id === app.view)) app.view = cfg.views[0]?.id;
 }
 

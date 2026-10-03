@@ -1,4 +1,5 @@
 <script>
+  import { param } from '../lib/params.js';
   // The dashboard canvas. Laid out at the layout's design width and scaled
   // (CSS zoom) to fit the screen. In edit mode cards can be dragged anywhere
   // (including between the sidebar and main area) and resized from any edge or
@@ -18,7 +19,7 @@
   const fit = $derived(available / L.width);
   // Sizing per device (Layout tab, or ?fit=width|screen|actual in the URL):
   // fill the width, fit the whole view on screen (wall tablets), or actual size.
-  const display = $derived(new URLSearchParams(location.search).get('fit') || app.config.layouts[app.device]?.display || 'width');
+  const display = $derived(param('fit') || app.config.layouts[app.device]?.display || 'width');
   const contentH = $derived(Math.max(
     (L.zones[app.view] || []).reduce((m, p) => Math.max(m, p.y + p.h), 0),
     sb ? (L.zones.sidebar || []).reduce((m, p) => Math.max(m, p.y + p.h), 0) : 0,

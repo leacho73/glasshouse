@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.15.0
+
+New address options for wall tablets:
+- `?view=Upstairs` opens a screen on a chosen view (its name or id), e.g. downstairs tablets on Downstairs and upstairs ones on Upstairs.
+- `?return=5` goes back to that view (and closes any pop-up) after 5 minutes without a touch.
+- `?noedit` hides the edit pencil and turns off the E shortcut.
+
+Fixed: address options added to Home Assistant's address bar (e.g. in Fully Kiosk) were ignored, because Glasshouse runs inside a frame of HA's page. All options (`?device`, `?fit`, `?kiosk`, `?view`, `?return`, `?noedit`) are now read from HA's address as well.
+
 ## 0.14.0
 
 - **Predbat card** (Add → Energy): what Predbat is doing now and until when, battery %, cost today, cost of the rest of the plan and yesterday's savings. A 24-hour plan chart shows charge (green) and export (yellow) windows, predicted battery %, car charging and import rates, followed by a list of the next charge / export slots. Charge / Export / Hold buttons force that for the current half-hour, and there's a Predbat mode picker. Predbat's own plan summary can be shown too. Entities are detected automatically, and the card is added to the ha-fusion import's Energy view.

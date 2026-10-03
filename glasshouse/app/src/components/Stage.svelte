@@ -16,7 +16,8 @@
   const L = $derived(layout());
   const sb = $derived(L.sidebar.enabled ? L.sidebar.width : 0);
   const fit = $derived(available / L.width);
-  const scale = $derived(app.device === autoDevice && !app.editing ? fit : Math.min(fit, 1));
+  // Fill the width like view mode does; only a phone-sized preview on a big screen is capped at 100%.
+  const scale = $derived(L.width < 700 && app.device !== autoDevice ? Math.min(fit, 1) : fit);
   const left = $derived(Math.max(0, (available - L.width * scale) / 2));
   const mainW = $derived(L.width - sb);
   const origin = (zone) => ({
@@ -210,7 +211,7 @@
       <div class="inner" role="presentation" style="height:{sideH}px" onpointerdown={(e) => bgDown(e, 'sidebar')} onpointermove={move} onpointerup={end}>{@render zone('sidebar', sideList)}</div>
     </aside>
   {/if}
-  <main class="zone main" role="presentation" style="width:{mainW}px;height:{mainH}px;{app.config.views.find((v) => v.id === app.view)?.background ? 'background:' + app.config.views.find((v) => v.id === app.view).background : ''}"
+  <main class="zone main" role="presentation" data-size="{L.width}px layout · edge of the canvas" style="width:{mainW}px;height:{mainH}px;{app.config.views.find((v) => v.id === app.view)?.background ? 'background:' + app.config.views.find((v) => v.id === app.view).background : ''}"
     onpointerdown={(e) => bgDown(e, app.view)} onpointermove={move} onpointerup={end}>
     {@render zone(app.view, mainList)}
   </main>
@@ -226,6 +227,8 @@
   .dragging .sidebar { overflow: visible; z-index: 5; }
   .editing .zone { background-image: radial-gradient(circle, rgba(255,255,255,.09) 1px, transparent 1.2px); background-size: calc(var(--grid) * 2) calc(var(--grid) * 2); touch-action: none; }
   .editing .sidebar { outline: 1px dashed rgba(122,162,255,.35); outline-offset: -1px; }
+  .editing .main { outline: 1px dashed rgba(122,162,255,.35); outline-offset: -1px; }
+  .editing .main::after { content: attr(data-size); position: absolute; right: 8px; bottom: 8px; font-size: 11px; color: var(--muted); pointer-events: none; }
   .place { position: absolute; }
   .editing .place:hover { outline: 1px solid rgba(122,162,255,.4); outline-offset: 2px; border-radius: var(--radius); }
   .editing .place.grouped:not(.sel)::after { content: ''; position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; border-radius: 50%; background: rgba(122,162,255,.6); z-index: 3; pointer-events: none; }

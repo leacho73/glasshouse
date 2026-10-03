@@ -1,0 +1,131 @@
+// Tiny server: static files, config storage, icon lookup and an authenticated
+// proxy to Home Assistant (websocket + HTTP for camera/artwork images).
+// In the add-on, HA is reached via the Supervisor; in dev via HA_URL + HA_TOKEN.
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import zlib from 'node:zlib';
+import { WebSocketServer, WebSocket } from 'ws';
+import * as mdi from '@mdi/js';
+
+const PORT = Number(process.env.PORT || 8099);
+const SUP = process.env.SUPERVISOR_TOKEN;
+const HA_URL = (process.env.HA_URL || (SUP ? 'http://supervisor/core' : 'http://localhost:8123')).replace(/\/$/, '');
+const TOKEN = SUP || process.env.HA_TOKEN || (process.env.HA_TOKEN_FILE && fs.readFileSync(process.env.HA_TOKEN_FILE, 'utf8').trim());
+const DATA = process.env.DATA_DIR || (SUP ? '/data' : path.resolve('data'));
+const DIST = path.resolve(process.env.DIST_DIR || 'dist');
+const CONFIG = path.join(DATA, 'dashboard.json');
+fs.mkdirSync(DATA, { recursive: true });
+
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.woff2': 'font/woff2', '.ico': 'image/x-icon' };
+
+function send(res, code, body, type = 'application/json') {
+  res.writeHead(code, { 'Content-Type': type, 'Cache-Control': 'no-store' });
+  res.end(body);
+}
+
+function serveStatic(req, res, urlPath) {
+  let file = path.join(DIST, path.normalize(urlPath).replace(/^(\.\.[/\\])+/, ''));
+  if (!file.startsWith(DIST) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) file = path.join(DIST, 'index.html');
+  const ext = path.extname(file);
+  const immutable = urlPath.startsWith('/assets/');
+  const headers = { 'Content-Type': TYPES[ext] || 'application/octet-stream', 'Cache-Control': immutable ? 'public, max-age=31536000, immutable' : 'no-cache' };
+  const gz = fs.existsSync(file + '.gz') && /gzip/.test(req.headers['accept-encoding'] || '');
+  if (gz) headers['Content-Encoding'] = 'gzip';
+  res.writeHead(200, headers);
+  fs.createReadStream(gz ? file + '.gz' : file).pipe(res);
+}
+
+function iconPath(name) {
+  const key = 'mdi' + name.replace(/^mdi:/, '').split('-').map((s) => s[0]?.toUpperCase() + s.slice(1)).join('');
+  return mdi[key] || null;
+}
+
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url, 'http://x');
+  const p = url.pathname;
+  try {
+    if (p === '/api/config') {
+      if (req.method === 'GET') return send(res, 200, fs.existsSync(CONFIG) ? fs.readFileSync(CONFIG) : 'null');
+      if (req.method === 'PUT') {
+        let body = '';
+        for await (const c of req) body += c;
+        JSON.parse(body);
+        fs.writeFileSync(CONFIG + '.tmp', body);
+        fs.renameSync(CONFIG + '.tmp', CONFIG);
+        return send(res, 200, '{"ok":true}');
+      }
+    }
+    if (p === '/api/icons') {
+      const out = {};
+      for (const n of (url.searchParams.get('n') || '').split(',').slice(0, 200)) if (n) out[n] = iconPath(n);
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=86400' });
+      return res.end(JSON.stringify(out));
+    }
+    if (p === '/api/icon-names') {
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=86400' });
+      return res.end(JSON.stringify(Object.keys(mdi).map((k) => 'mdi:' + k.slice(3).replace(/([a-z0-9])([A-Z0-9])/g, '$1-$2').toLowerCase())));
+    }
+    if (p.startsWith('/ha/')) {
+      // Proxy HA image endpoints (camera_proxy, media_player_proxy, local files).
+      const target = HA_URL + p.slice(3) + url.search;
+      const r = await fetch(target, { headers: { Authorization: `Bearer ${TOKEN}` } });
+      res.writeHead(r.status, { 'Content-Type': r.headers.get('content-type') || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+      if (!r.body) return res.end();
+      const reader = r.body.getReader();
+      req.on('close', () => reader.cancel().catch(() => {}));
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (!res.write(value)) await new Promise((ok) => res.once('drain', ok));
+      }
+      return res.end();
+    }
+    serveStatic(req, res, p);
+  } catch (e) {
+    console.error(p, e.message);
+    if (!res.headersSent) send(res, 500, JSON.stringify({ error: e.message }));
+    else res.end();
+  }
+});
+
+// Websocket proxy: authenticate to HA server-side, then tell the browser auth_ok
+// and pipe frames both ways. The browser never sees the token.
+const wss = new WebSocketServer({ noServer: true, perMessageDeflate: true });
+server.on('upgrade', (req, socket, head) => {
+  if (!req.url.split('?')[0].endsWith('/api/websocket')) return socket.destroy();
+  wss.handleUpgrade(req, socket, head, (client) => {
+    const ha = new WebSocket(HA_URL.replace(/^http/, 'ws') + '/api/websocket', { perMessageDeflate: true });
+    const queue = [];
+    let ready = false;
+    ha.on('message', (data, isBinary) => {
+      if (!ready) {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'auth_required') return ha.send(JSON.stringify({ type: 'auth', access_token: TOKEN }));
+        if (msg.type === 'auth_ok') {
+          ready = true;
+          client.send(JSON.stringify(msg));
+          queue.splice(0).forEach((m) => ha.send(m));
+          return;
+        }
+        client.send(JSON.stringify(msg));
+        return client.close();
+      }
+      client.send(data, { binary: isBinary });
+    });
+    client.on('message', (data) => (ready ? ha.send(data.toString()) : queue.push(data.toString())));
+    const close = () => { client.close(); ha.close(); };
+    ha.on('close', close); ha.on('error', close);
+    client.on('close', close); client.on('error', close);
+  });
+});
+
+// Pre-compress static assets once at startup.
+if (fs.existsSync(DIST)) {
+  for (const f of fs.readdirSync(DIST, { recursive: true })) {
+    const full = path.join(DIST, f);
+    if (/\.(js|css|html|svg|json)$/.test(f) && fs.statSync(full).isFile()) fs.writeFileSync(full + '.gz', zlib.gzipSync(fs.readFileSync(full), { level: 9 }));
+  }
+}
+
+server.listen(PORT, () => console.log(`HA Dashboard on :${PORT} -> ${HA_URL}`));

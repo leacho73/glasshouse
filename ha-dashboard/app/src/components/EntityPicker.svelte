@@ -1,0 +1,56 @@
+<script>
+  import Icon from './Icon.svelte';
+  import { states } from '../lib/ha.svelte.js';
+  import { entityIcon } from '../lib/entity.js';
+  let { value = $bindable(''), domain = null, onpick, placeholder = 'Search entities…' } = $props();
+  let q = $state('');
+  let open = $state(false);
+  const domains = $derived(domain ? (Array.isArray(domain) ? domain : [domain]) : null);
+  const results = $derived.by(() => {
+    if (!open) return [];
+    const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+    const out = [];
+    for (const [id, e] of states) {
+      if (domains && !domains.includes(id.split('.')[0])) continue;
+      const hay = (id + ' ' + (e.attributes.friendly_name || '')).toLowerCase();
+      if (terms.every((t) => hay.includes(t))) out.push(e);
+      if (out.length >= 60) break;
+    }
+    return out;
+  });
+  function pick(id) {
+    if (onpick) onpick(id);
+    else value = id;
+    q = '';
+    open = false;
+  }
+</script>
+
+<div class="ep">
+  <input type="text" value={onpick ? q : open ? q : value} {placeholder}
+    onfocus={() => { open = true; q = onpick ? q : ''; }}
+    oninput={(e) => (q = e.currentTarget.value)}
+    onblur={() => setTimeout(() => (open = false), 150)}
+    onkeydown={(e) => { if (e.key === 'Enter' && results[0]) pick(results[0].entity_id); if (e.key === 'Enter' && !results[0] && q.includes('.')) pick(q); }} />
+  {#if open && results.length}
+    <div class="list">
+      {#each results as e (e.entity_id)}
+        <button type="button" onmousedown={(ev) => ev.preventDefault()} onclick={() => pick(e.entity_id)}>
+          <Icon icon={entityIcon(e)} size="1.1em" />
+          <span class="n">{e.attributes.friendly_name || e.entity_id}<small>{e.entity_id}</small></span>
+          <span class="s">{e.state}</span>
+        </button>
+      {/each}
+    </div>
+  {/if}
+</div>
+
+<style>
+  .ep { position: relative; }
+  .list { position: absolute; z-index: 50; left: 0; right: 0; top: calc(100% + 4px); max-height: 300px; overflow: auto; background: #1b2030; border: 1px solid rgba(255,255,255,.1); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+  button { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: none; border: 0; color: inherit; padding: 7px 10px; font: inherit; font-size: 13px; }
+  button:hover { background: rgba(255,255,255,.07); }
+  .n { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  small { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
+  .s { color: var(--muted); font-size: 11px; max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>

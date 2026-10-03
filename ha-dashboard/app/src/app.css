@@ -1,0 +1,20 @@
+*, *::before, *::after { box-sizing: border-box; }
+html { background: #0b0f17; }
+body {
+  margin: 0; min-height: 100dvh; color: var(--text); font-family: var(--font);
+  background: var(--page-bg); background-attachment: fixed;
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none; font-size: 16px;
+}
+button { cursor: pointer; font: inherit; -webkit-tap-highlight-color: transparent; }
+input, select, textarea {
+  font: inherit; font-size: 13px; color: var(--text); background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.1); border-radius: 8px; padding: 7px 9px; width: 100%; outline: none;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+textarea { resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+select option { background: #1b2030; }
+input[type='checkbox'] { width: auto; accent-color: var(--accent); }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 4px; }
+::-webkit-scrollbar-track { background: transparent; }

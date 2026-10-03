@@ -1,0 +1,19 @@
+{
+  "name": "ha-dashboard",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "server": "node server/index.js"
+  },
+  "dependencies": {
+    "@mdi/js": "^7.4.47",
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "svelte": "^5.57.1",
+    "vite": "^8.3.2"
+  }
+}

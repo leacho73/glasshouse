@@ -5,7 +5,7 @@ Put any card anywhere, make it any size, style it any way — and run it on a wa
 
 <p align="center"><img src="docs/screenshots/home.webp" alt="Glasshouse on a wall tablet" width="900"></p>
 
-<p align="center"><a href="docs/demo.mp4"><img src="docs/screenshots/preview.webp" alt="Glasshouse in action" width="900"></a><br><sub>▶ <a href="docs/demo.mp4">Watch the full 1¾-minute demo</a> (download): lights, thermostat, music, the energy cards, Predbat and editing in the browser.</sub></p>
+<p align="center"><a href="https://youtu.be/WYopi5r8f4s"><img src="docs/screenshots/preview.webp" alt="Glasshouse in action" width="900"></a><br><sub>▶ <a href="https://youtu.be/WYopi5r8f4s">Watch the full 1¾-minute demo on YouTube</a>: lights, thermostat, music, the energy cards, Predbat and editing in the browser.</sub></p>
 
 ---
 

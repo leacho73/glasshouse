@@ -113,35 +113,81 @@ setInterval(() => broadcast({ type: 'ping' }), 30000);
 // everything else (streams freeze, switching camera never loads).
 const cams = new WebSocketServer({ noServer: true });
 const SOI = Buffer.from([0xff, 0xd8]), EOI = Buffer.from([0xff, 0xd9]);
+// The Supervisor's proxy buffers whole responses, so a never-ending MJPEG stream
+// never arrives through it. In the add-on, open streams on Core directly using
+// the camera's own access token; if that fails, poll snapshots instead.
+let coreBase;
+async function coreDirect() {
+  if (!SUP) return HA_URL;
+  if (coreBase !== undefined) return coreBase;
+  try {
+    const info = (await (await fetch('http://supervisor/core/info', { headers: { Authorization: `Bearer ${SUP}` } })).json()).data;
+    return (coreBase = info.ssl ? null : `http://homeassistant:${info.port || 8123}`);
+  } catch {
+    return null;
+  }
+}
+const auth = { Authorization: `Bearer ${TOKEN}` };
+
 async function camStream(ws, entity) {
   const ac = new AbortController();
   ws.on('close', () => ac.abort());
   ws.on('error', () => ac.abort());
+  const send = (frame) => ws.readyState === WebSocket.OPEN && ws.bufferedAmount < 1e6 && ws.send(Buffer.from(frame), { binary: true });
+  let got = false;
   try {
-    const r = await fetch(`${HA_URL}/api/camera_proxy_stream/${encodeURIComponent(entity)}`, { headers: { Authorization: `Bearer ${TOKEN}` }, signal: ac.signal });
-    if (!r.ok || !r.body) throw new Error('HTTP ' + r.status);
-    let buf = Buffer.alloc(0);
-    for await (const chunk of r.body) {
-      buf = buf.length ? Buffer.concat([buf, chunk]) : Buffer.from(chunk);
-      // Pull out complete JPEGs (by the part's Content-Length, else SOI..EOI);
-      // send only the newest, and skip frames while the browser is behind.
-      let frame = null;
-      for (;;) {
-        const s = buf.indexOf(SOI);
-        if (s < 0) { buf = buf.subarray(Math.max(0, buf.length - 1)); break; }
-        const len = Number([...buf.subarray(Math.max(0, s - 400), s).toString('latin1').matchAll(/content-length:\s*(\d+)/gi)].pop()?.[1]);
-        let end;
-        if (len > 0) end = buf.length >= s + len ? s + len : -1;
-        else { const e = buf.indexOf(EOI, s + 2); end = e < 0 ? -1 : e + 2; }
-        if (end < 0) break;
-        frame = buf.subarray(s, end);
-        buf = buf.subarray(end);
+    const base = await coreDirect();
+    if (base) {
+      let url = `${base}/api/camera_proxy_stream/${entity}`;
+      if (SUP) {
+        const st = await (await fetch(`${HA_URL}/api/states/${entity}`, { headers: auth, signal: ac.signal })).json();
+        url += `?token=${st.attributes.access_token}`;
       }
-      if (buf.length > 8e6) buf = Buffer.alloc(0);
-      if (frame && ws.readyState === WebSocket.OPEN && ws.bufferedAmount < 1e6) ws.send(Buffer.from(frame), { binary: true });
+      // Give up on a stream that never sends a frame, or stalls.
+      const stream = new AbortController();
+      ac.signal.addEventListener('abort', () => stream.abort());
+      let last = Date.now();
+      const dog = setInterval(() => Date.now() - last > (got ? 20000 : 8000) && stream.abort(), 2000);
+      try {
+        const r = await fetch(url, { headers: SUP ? {} : auth, signal: stream.signal });
+        if (!r.ok || !r.body) throw new Error('HTTP ' + r.status);
+        let buf = Buffer.alloc(0);
+        for await (const chunk of r.body) {
+          buf = buf.length ? Buffer.concat([buf, chunk]) : Buffer.from(chunk);
+          // Pull out complete JPEGs (by the part's Content-Length, else SOI..EOI);
+          // send only the newest, and skip frames while the browser is behind.
+          let frame = null;
+          for (;;) {
+            const s = buf.indexOf(SOI);
+            if (s < 0) { buf = buf.subarray(Math.max(0, buf.length - 1)); break; }
+            const len = Number([...buf.subarray(Math.max(0, s - 400), s).toString('latin1').matchAll(/content-length:\s*(\d+)/gi)].pop()?.[1]);
+            let end;
+            if (len > 0) end = buf.length >= s + len ? s + len : -1;
+            else { const e = buf.indexOf(EOI, s + 2); end = e < 0 ? -1 : e + 2; }
+            if (end < 0) break;
+            frame = buf.subarray(s, end);
+            buf = buf.subarray(end);
+          }
+          if (buf.length > 8e6) buf = Buffer.alloc(0);
+          if (frame) { got = true; last = Date.now(); send(frame); }
+        }
+      } finally {
+        clearInterval(dog);
+      }
     }
   } catch (e) {
-    if (!ac.signal.aborted) console.error('camera', entity, e.message);
+    if (!ac.signal.aborted) console.error('camera stream', entity, e.message);
+  }
+  // No stream: send snapshots as fast as the camera gives them (max ~2/s).
+  while (!got && !ac.signal.aborted && ws.readyState === WebSocket.OPEN) {
+    const t0 = Date.now();
+    try {
+      const r = await fetch(`${HA_URL}/api/camera_proxy/${entity}`, { headers: auth, signal: ac.signal });
+      if (r.ok) send(Buffer.from(await r.arrayBuffer()));
+    } catch (e) {
+      if (ac.signal.aborted) break;
+    }
+    await new Promise((ok) => setTimeout(ok, Math.max(200, 500 - (Date.now() - t0))));
   }
   ws.close();
 }

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.2
+
+- Fixed live cameras showing a frozen picture in the add-on. Home Assistant's add-on proxy waits for a response to finish before passing it on, and a live stream never finishes. Live streams now go straight to Home Assistant, and if that isn't possible (e.g. HA uses SSL) the card falls back to refreshing snapshots about twice a second.
+
 ## 0.12.1
 
 - Light card: removed the big brightness % on the right — it was already shown under the name.

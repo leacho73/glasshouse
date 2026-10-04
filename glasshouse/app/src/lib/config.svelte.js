@@ -386,3 +386,29 @@ export function removeView(id) {
   if (app.view === id) setView(app.config.views[0].id);
   changed();
 }
+
+// Changing the design width or the sidebar changes the main area's width. Cards
+// that would spill off the edge (or that filled the old width) are scaled
+// across to fit, so equal gaps stay equal. Scaling is always from where things
+// were when the edit began (until it pauses for 2 s), so typing "350" (via 3 and 35) doesn't drift.
+let fitBase = null, fitTimer;
+export function setMainWidth(apply) {
+  clearTimeout(fitTimer);
+  fitTimer = setTimeout(() => (fitBase = null), 2000);
+  const l = layout();
+  if (fitBase?.l !== l) fitBase = { l, w: zoneWidth('main', l), zones: $state.snapshot(l.zones) };
+  apply(l);
+  const w = zoneWidth('main', l);
+  if (w > 100 && fitBase.w > 100) {
+    for (const [z, list] of Object.entries(fitBase.zones)) {
+      if (z === 'sidebar' || !l.zones[z]) continue;
+      const right = list.reduce((m, p) => Math.max(m, p.x + p.w), 0);
+      const k = right > w || right >= fitBase.w - GRID * 3 ? w / Math.max(right, fitBase.w) : 1;
+      l.zones[z] = list.map((p) => {
+        const x = Math.round(p.x * k);
+        return { ...p, x, w: Math.max(GRID * 4, Math.round((p.x + p.w) * k) - x) };
+      });
+    }
+  }
+  changed();
+}

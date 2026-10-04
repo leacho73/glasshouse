@@ -20,26 +20,32 @@
   // Sizing per device (Layout tab, or ?fit=width|screen|actual in the URL):
   // fill the width, fit the whole view on screen (wall tablets), or actual size.
   const display = $derived(param('fit') || app.config.layouts[app.device]?.display || 'width');
-  const contentH = $derived(Math.max(
-    (L.zones[app.view] || []).reduce((m, p) => Math.max(m, p.y + p.h), 0),
-    sb ? (L.zones.sidebar || []).reduce((m, p) => Math.max(m, p.y + p.h), 0) : 0,
-  ) + 20);
+  const bottom = (list) => (list || []).reduce((m, p) => Math.max(m, p.y + p.h), 0) + 20;
+  const mainContentH = $derived(bottom(L.zones[app.view]));
+  const sideContentH = $derived(sb ? bottom(L.zones.sidebar) : 0);
+  const preview = $derived(L.width < 700 && app.device !== autoDevice); // phone preview on a big screen
+  // Fit-to-screen with a sidebar: by default the sidebar keeps one size on every
+  // view and only the main area shrinks to fit (Layout tab can make them shrink together).
+  const split = $derived(!!sb && display === 'screen' && !app.editing && !preview && L.sidebar.scaling !== 'shared');
+  const sideZ = $derived(split ? Math.min(fit, vh / sideContentH) : 1);
+  const mainZ = $derived(split ? Math.min((available - sb * sideZ) / (L.width - sb), vh / mainContentH) : 1);
   const scale = $derived.by(() => {
-    if (L.width < 700 && app.device !== autoDevice) return Math.min(fit, 1); // phone preview on a big screen
+    if (split) return 1;
+    if (preview) return Math.min(fit, 1);
     if (display === 'actual') return Math.min(fit, 1);
-    if (display === 'screen' && !app.editing) return Math.min(fit, vh / contentH);
+    if (display === 'screen' && !app.editing) return Math.min(fit, vh / Math.max(mainContentH, sideContentH));
     return fit;
   });
   // When a wall tablet shrinks a tall view to fit, stretch the canvas to the full
   // screen width (sidebar stays at the edge, main area gets the spare space)
   // instead of centring it with gaps either side.
-  const fill = $derived(display === 'screen' && !app.editing && scale < fit);
-  const stageW = $derived(fill ? available / scale : L.width);
-  const left = $derived(fill ? 0 : Math.max(0, (available - L.width * scale) / 2));
-  const mainW = $derived(stageW - sb);
+  const fill = $derived(!split && display === 'screen' && !app.editing && scale < fit);
+  const stageW = $derived(split ? available : fill ? available / scale : L.width);
+  const left = $derived(split || fill ? 0 : Math.max(0, (available - L.width * scale) / 2));
+  const mainW = $derived(split ? (available - sb * sideZ) / mainZ : stageW - sb);
   // ...and widen the main area's cards to use that space, rather than leaving a
   // gap on the right (text keeps its size; cards just get wider).
-  const kx = $derived(fill ? mainW / (L.width - sb) : 1);
+  const kx = $derived(split || fill ? mainW / (L.width - sb) : 1);
   const origin = (zone) => ({
     x: zone === 'sidebar' ? (L.sidebar.side === 'right' ? stageW - sb : 0) : L.sidebar.side === 'right' ? 0 : sb,
     y: zone === 'sidebar' ? scrollY / scale - (sbEl?.scrollTop || 0) : 0,
@@ -48,8 +54,8 @@
   const local = (e, zone) => ({ x: (e.clientX - left) / scale - origin(zone).x, y: (e.clientY + scrollY) / scale - origin(zone).y });
   const mainList = $derived(L.zones[app.view] || []);
   const sideList = $derived(L.zones.sidebar || []);
-  const mainH = $derived(Math.max(vh / scale, mainList.reduce((m, p) => Math.max(m, p.y + p.h), 0) + (app.editing ? 400 : 20)));
-  const sideH = $derived(Math.max(vh / scale, sideList.reduce((m, p) => Math.max(m, p.y + p.h), 0) + 20));
+  const mainH = $derived(Math.max(vh / scale / mainZ, mainList.reduce((m, p) => Math.max(m, p.y + p.h), 0) + (app.editing ? 400 : 20)));
+  const sideH = $derived(Math.max(vh / scale / sideZ, sideList.reduce((m, p) => Math.max(m, p.y + p.h), 0) + 20));
 
   const sel = $derived(app.editing ? new Set(selectionSet()) : new Set());
   const inSel = (zone, i) => app.selected?.zone === zone && sel.has(i);
@@ -303,11 +309,11 @@
 <div class="stage" class:editing={app.editing} class:dragging={!!op} class:right={L.sidebar.side === 'right'}
   style="width:{stageW}px;zoom:{scale};margin-left:{left / scale}px;--grid:{GRID}px">
   {#if sb}
-    <aside class="zone sidebar" bind:this={sbEl} style="width:{sb}px;height:{vh / scale}px">
+    <aside class="zone sidebar" bind:this={sbEl} style="width:{sb}px;height:{vh / scale / sideZ}px;zoom:{sideZ}">
       <div class="inner" role="presentation" style="height:{sideH}px" onpointerdown={(e) => bgDown(e, 'sidebar')} onpointermove={move} onpointerup={end}>{@render zone('sidebar', sideList)}</div>
     </aside>
   {/if}
-  <main class="zone main" role="presentation" data-size="{L.width}px layout · edge of the canvas" style="width:{mainW}px;height:{mainH}px;{app.config.views.find((v) => v.id === app.view)?.background ? 'background:' + app.config.views.find((v) => v.id === app.view).background : ''}"
+  <main class="zone main" role="presentation" data-size="{L.width}px layout · edge of the canvas" style="width:{mainW}px;height:{mainH}px;zoom:{mainZ};{app.config.views.find((v) => v.id === app.view)?.background ? 'background:' + app.config.views.find((v) => v.id === app.view).background : ''}"
     onpointerdown={(e) => bgDown(e, app.view)} onpointermove={move} onpointerup={end}>
     {@render zone(app.view, mainList)}
   </main>

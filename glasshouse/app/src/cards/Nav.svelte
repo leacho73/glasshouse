@@ -29,8 +29,9 @@
 </nav>
 
 <style>
-  .nav { height: 100%; display: flex; flex-direction: column; justify-content: safe center; gap: 4px; overflow: auto; scrollbar-width: none; }
-  .nav::-webkit-scrollbar { display: none; }
+  .nav { height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 4px; overflow: hidden; }
+  /* Rows share the height: they shrink together when the card is short instead of overflowing. */
+  .nav:not(.horizontal) button { flex: 0 1 46px; min-height: 0; padding-block: 0; }
   .horizontal { flex-direction: row; align-items: center; }
   button { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; border: 0; background: none; color: var(--muted); font: inherit; font-weight: 500; text-align: left; white-space: nowrap; transition: all .2s; }
   .horizontal { gap: 2px; }

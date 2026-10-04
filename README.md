@@ -14,7 +14,7 @@ Put any card anywhere, make it any size, style it any way — and run it on a wa
 Glasshouse is a Home Assistant **add-on** that gives you a dashboard you design in the browser — no YAML, no grid. It was inspired by [ha-fusion](https://github.com/matt8707/ha-fusion), and goes further on layout freedom, styling and energy data.
 
 - **Free layout** — drag cards anywhere and drag any edge or corner to resize. Cards snap to each other's edges and sizes (with guide lines) and to a grid; hold Shift for pixel precision.
-- **Sidebar** — an optional sidebar that stays put while you switch views; cards move freely between sidebar and main area.
+- **Sidebar** — an optional sidebar that stays put (and keeps its size) while you switch views; cards move freely between sidebar and main area.
 - **One layout, every screen** — design once for your wall tablet; desktops show it scaled, phones get an automatic single-column version. Give any device its own custom layout if you want.
 - **Made for wall tablets** — *fit the whole view on screen* (no scrolling), a kiosk mode that hides Home Assistant's header bar, and **live updates**: save on your laptop and every tablet updates within a second. After an add-on update, open screens reload themselves.
 - **Templates everywhere** — any text, icon, colour or style can be a live Home Assistant template (`{{ states('sensor.x') }}`), and any card can be shown or hidden by a template.

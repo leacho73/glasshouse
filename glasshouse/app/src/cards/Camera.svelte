@@ -2,14 +2,14 @@
   export const meta = {
     type: 'camera', name: 'Camera', icon: 'mdi:cctv', category: 'Media',
     size: { w: 400, h: 240 }, tap: 'more-info',
-    defaults: { entity: '', mode: 'snapshot', refresh: 5, fit: 'cover', show_name: true },
+    defaults: { entity: '', mode: 'snapshot', refresh: 5, fit: 'auto', show_name: true },
     fields: [
       { key: 'entity', label: 'Camera', type: 'entity', domain: ['camera', 'image'] },
       { key: 'name', label: 'Name', type: 'text' },
       { key: 'show_name', label: 'Show name', type: 'bool' },
       { key: 'mode', label: 'Mode', type: 'select', options: ['snapshot', 'live'] },
       { key: 'refresh', label: 'Snapshot refresh (s)', type: 'number' },
-      { key: 'fit', label: 'Fit', type: 'select', options: ['cover', 'contain'] },
+      { key: 'fit', label: 'Fit', type: 'select', options: [{ value: 'auto', label: 'Auto' }, { value: 'crop', label: 'Fill the card (crops edges)' }, { value: 'contain', label: 'Whole picture' }] },
     ],
   };
 </script>
@@ -18,13 +18,23 @@
   import { t, ent } from '../lib/tpl.js';
   import { name } from '../lib/entity.js';
   import { haImage } from '../lib/ha.svelte.js';
-  let { props } = $props();
+  let { props, w = 0, h = 0 } = $props();
   const e = $derived(ent(props.entity));
   // Just the id, so attribute updates (e.g. the rotating access token) don't restart streams.
   const camId = $derived(e?.entity_id.startsWith('camera.') ? e.entity_id : null);
   const live = $derived(props.mode === 'live' && !!camId);
   let tick = $state(0);
   let shown = $state('');
+  let ratio = $state(0);
+  // Auto (also older cards saved as 'cover'): fill the card unless the picture's
+  // shape is very different (e.g. a 32:9 dual-lens camera in a 2:1 card), then show it whole.
+  const fit = $derived.by(() => {
+    if (props.fit === 'crop') return 'cover';
+    if (props.fit === 'contain') return 'contain';
+    if (!ratio || !w || !h) return 'cover';
+    const r = ratio / (w / h);
+    return Math.max(r, 1 / r) > 1.25 ? 'contain' : 'cover';
+  });
   // Snapshots: poll, double-buffered so the picture never flashes blank.
   $effect(() => {
     if (live) return;
@@ -88,7 +98,7 @@
 </script>
 
 <div class="cam">
-  {#if shown}<img src={shown} alt="" style="object-fit:{props.fit}" />{/if}
+  {#if shown}<img src={shown} alt="" style="object-fit:{fit}" onload={(ev) => (ratio = ev.currentTarget.naturalWidth / ev.currentTarget.naturalHeight || 0)} />{/if}
   {#if props.show_name}<div class="lbl">{t(props.name) || name(e)}</div>{/if}
 </div>
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.18.0
+
+- **Sidebar keeps its size** with *Fit the whole view on screen*: only the main area shrinks to fit, so the sidebar no longer changes size as you switch views. **Layout → Sidebar → When a view shrinks to fit the screen** brings back the old behaviour if you prefer it.
+- **Changing the sidebar width no longer pushes cards off the screen.** Cards that would go over the edge (or that filled the width) are scaled across to fit, keeping equal gaps equal. The same happens when you turn the sidebar on or off or change the design width. Cards already off the edge come back the next time you change the width.
+- **Camera fit: Auto** (new default) fills the card unless the picture is a very different shape from it, e.g. a wide dual-lens camera, which is then shown whole instead of heavily cropped. Also *Fill the card (crops edges)* and *Whole picture*. Existing camera cards switch to Auto.
+- Navigation card: the views share the card's height, so a short card no longer cuts off the last view or shows a scrollbar.
+
 ## 0.17.0
 
 - **Energy usage card** (Add → Energy), like Home Assistant's energy dashboard but live: hourly bars of where the house's energy came from (grid, solar, battery) above the line and where spare energy went (export, battery charging) below it. Today's kWh used, from grid, solar, exported and self-sufficiency, plus **cost, earnings and net** from HA's own cost statistics. A dotted line shows the price paid per kWh each hour, and the header shows what the house is using right now and the current import / export price. Tap an hour for its breakdown and cost. Sources and prices come from Home Assistant's Energy settings; HA's 5-minute statistics are read every minute and the current hour is topped up live from your power sensors in between. Today or yesterday.

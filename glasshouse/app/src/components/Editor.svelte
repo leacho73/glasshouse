@@ -5,7 +5,7 @@
   import { cards, categories } from '../lib/registry.js';
   import {
     app, layout, DEVICES, DEFAULT_THEME, changed, addCard, selectedCard, selectedPlacement, removeSelected,
-    duplicateSelected, copyLayout, importConfig, selectionSet, groupSelected, ungroupSelected, ensureEditable, setMode, MODES, DISPLAYS, zoneList, addView, removeView, setView, isPlacedAnywhere, placeExisting, zoneWidth,
+    duplicateSelected, copyLayout, importConfig, selectionSet, groupSelected, ungroupSelected, ensureEditable, setMode, MODES, DISPLAYS, zoneList, addView, removeView, setView, isPlacedAnywhere, placeExisting, zoneWidth, setMainWidth,
   } from '../lib/config.svelte.js';
 
   import { fromFusion } from '../lib/fusion.js';
@@ -230,13 +230,16 @@
       </div>
       {#if app.device === 'tablet' || app.config.layouts[app.device].mode === 'custom'}
         <div class="fields">
-          <Field obj={layout()} f={{ key: 'width', label: 'Design width (px) — scaled to fit the screen', type: 'number' }} />
+          <Field obj={layout()} f={{ key: 'width', label: 'Design width (px) — scaled to fit the screen', type: 'number' }} onset={(v) => setMainWidth((l) => (l.width = v))} />
         </div>
         <h4>Sidebar</h4>
         <div class="fields">
-          <Field obj={layout().sidebar} f={{ key: 'enabled', label: 'Show sidebar', type: 'bool' }} />
+          <Field obj={layout().sidebar} f={{ key: 'enabled', label: 'Show sidebar', type: 'bool' }} onset={(v) => setMainWidth((l) => (l.sidebar.enabled = v))} />
           <Field obj={layout().sidebar} f={{ key: 'side', label: 'Side', type: 'select', options: ['left', 'right'] }} />
-          <Field obj={layout().sidebar} f={{ key: 'width', label: 'Width', type: 'number' }} />
+          <Field obj={layout().sidebar} f={{ key: 'width', label: 'Width', type: 'number' }} onset={(v) => setMainWidth((l) => (l.sidebar.width = v))} />
+          {#if app.config.layouts[app.device].display === 'screen'}
+            <Field obj={layout().sidebar} f={{ key: 'scaling', label: 'When a view shrinks to fit the screen', type: 'select', options: [{ value: 'fixed', label: 'Sidebar keeps its size' }, { value: 'shared', label: 'Sidebar shrinks with it' }] }} />
+          {/if}
         </div>
       {/if}
       {#if app.device !== 'tablet' && app.config.layouts[app.device].mode === 'custom'}

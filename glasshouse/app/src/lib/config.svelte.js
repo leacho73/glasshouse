@@ -9,13 +9,15 @@ import { reflow } from './reflow.js';
 import { clientId } from './live.js';
 
 export const DEVICES = {
-  tablet: { label: 'Main', width: 1280, sidebar: 300, display: 'width' },
+  tablet: { label: 'Tablet', width: 1280, sidebar: 300, display: 'width' },
   phone: { label: 'Phone', width: 420, sidebar: 0, mode: 'auto', display: 'width' },
   desktop: { label: 'Desktop', width: 1600, sidebar: 320, mode: 'same', display: 'actual' },
 };
 /** How a layout is sized on the screen. */
 export const DISPLAYS = { width: 'Fill the screen width (scroll down)', screen: 'Fit the whole view on screen (no scrolling — wall tablets)', actual: 'Actual size, centred (big monitors)' };
-export const MODES = { same: 'Same as main (scaled)', auto: 'Automatic (single column)', custom: 'Custom layout' };
+export const MODES = { same: 'Same as tablet (scaled to fit)', auto: 'Automatic (tablet layout in one column)', custom: 'Its own layout' };
+/** Short versions for the device picker at the bottom of the editor. */
+export const MODE_SHORT = { same: 'same as tablet', auto: 'automatic', custom: 'own layout' };
 export const GRID = 10;
 
 export const DEFAULT_THEME = {
@@ -350,6 +352,39 @@ export function duplicateSelected() {
   list.push({ ...$state.snapshot(p), card: id, x: p.x + GRID * 2, y: p.y + GRID * 2 });
   app.selected = { zone: app.selected.zone, index: list.length - 1 };
   changed();
+}
+
+/** Copy the selected card(s) to another view, on every layout they're on:
+ *  at the same spot if it's free there, otherwise below what's already there. */
+export function copyToView(view) {
+  ensureEditable();
+  const zone = app.selected?.zone;
+  if (!zone) return;
+  const src = zoneList(zone);
+  const ids = new Map(selectionSet().map((i) => [src[i].card, uid()]));
+  for (const [old, id] of ids) app.config.cards[id] = { ...$state.snapshot(app.config.cards[old]), id };
+  const group = ids.size > 1 ? uid() : null;
+  const hit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  for (const l of new Set([layout(), ...storedLayouts()])) {
+    const ps = Object.values(l.zones).flat().filter((p) => ids.has(p.card));
+    if (!ps.length) continue;
+    const dst = zoneList(view, l);
+    const copies = ps.map((p) => {
+      const q = { ...$state.snapshot(p), card: ids.get(p.card) };
+      if (group) q.group = group; else delete q.group;
+      return q;
+    });
+    const w = zoneWidth(view, l);
+    if (copies.some((q) => q.x + q.w > w || dst.some((r) => hit(q, r)))) {
+      const x0 = Math.min(...copies.map((q) => q.x)), y0 = Math.min(...copies.map((q) => q.y));
+      const bottom = dst.reduce((m, r) => Math.max(m, r.y + r.h), 0);
+      for (const q of copies) { q.x = q.x - x0 + GRID * 2; q.y = q.y - y0 + bottom + GRID * 2; }
+    }
+    dst.push(...copies);
+  }
+  changed();
+  const name = app.config.views.find((v) => v.id === view)?.name || view;
+  toast(`Copied ${ids.size > 1 ? ids.size + ' cards' : 'the card'} to ${name}`);
 }
 
 export function isPlacedAnywhere(cardId) {

@@ -3,7 +3,7 @@
   import Editor from './components/Editor.svelte';
   import Popup from './components/Popup.svelte';
   import Icon from './components/Icon.svelte';
-  import { app, load, save, layout, DEVICES, detectDevice, setView, removeSelected, duplicateSelected, selectedPlacement, changed, undo, undoLast, selectionSet, ensureEditable, zoneList, groupSelected } from './lib/config.svelte.js';
+  import { app, load, save, layout, DEVICES, MODE_SHORT, detectDevice, setView, removeSelected, duplicateSelected, selectedPlacement, changed, undo, undoLast, selectionSet, ensureEditable, zoneList, groupSelected } from './lib/config.svelte.js';
   import { conn, toasts, watchEntities, states, subscribe } from './lib/ha.svelte.js';
   import { HUB_CHARGING, MYENERGI_OWN } from './lib/octopus.js';
   import { GRID } from './lib/config.svelte.js';
@@ -58,6 +58,10 @@
   const kioskParam = param('kiosk');
   // ?noedit: no pencil and no E shortcut (wall tablets that shouldn't be edited).
   const noEdit = param('noedit') != null && param('noedit') !== '0';
+  // No sidebar and no Navigation card on this view: a small views menu instead,
+  // so there's always a way to switch views.
+  let viewsOpen = $state(false);
+  const needViews = $derived(!app.editing && app.config?.views.length > 1 && !layout().sidebar.enabled && !(layout().zones[app.view] || []).some((p) => app.config.cards[p.card]?.type === 'nav'));
   $effect(() => {
     if (!app.config) return;
     const on = kioskParam != null ? kioskParam !== '0' : !!app.config.layouts[app.device]?.kiosk;
@@ -140,12 +144,23 @@
         {#each app.config.views as v}<option value={v.id}>{v.name}</option>{/each}
       </select>
       <select value={app.device} onchange={(e) => { app.device = e.currentTarget.value; app.selected = null; app.multi = []; }} title="Preview / edit device">
-        {#each Object.entries(DEVICES) as [k, d]}<option value={k}>{d.label}{k !== 'tablet' ? ` · ${app.config.layouts[k].mode}` : ''}</option>{/each}
+        {#each Object.entries(DEVICES) as [k, d]}<option value={k}>{d.label}{k !== 'tablet' ? ` (${MODE_SHORT[app.config.layouts[k].mode] || app.config.layouts[k].mode})` : ''}</option>{/each}
       </select>
       <button title="Toggle panel" onclick={() => (app.panel = app.panel ? null : 'add')}><Icon icon="mdi:dock-right" size="1.2em" /></button>
       <span class="st">{app.saving ? 'Saving…' : app.dirty ? 'Unsaved' : 'Saved'}</span>
     </div>
-  {:else if !noEdit}
+  {/if}
+  {#if needViews}
+    <div class="views-fab" class:open={viewsOpen}>
+      <button class="vf" onclick={() => (viewsOpen = !viewsOpen)} aria-label="Views"><Icon icon={viewsOpen ? 'mdi:close' : 'mdi:menu'} size="1.1em" /></button>
+      {#if viewsOpen}
+        <div class="vlist">
+          {#each app.config.views as v (v.id)}<button class:on={app.view === v.id} onclick={() => { setView(v.id); viewsOpen = false; }}><Icon icon={v.icon || 'mdi:view-dashboard-outline'} size="1.1em" /> {v.name}</button>{/each}
+        </div>
+      {/if}
+    </div>
+  {/if}
+  {#if !app.editing && !noEdit}
     <button class="edit-fab" onclick={toggleEdit} aria-label="Edit dashboard"><Icon icon="mdi:pencil" size="1.1em" /></button>
   {/if}
 {/if}
@@ -164,6 +179,12 @@
   .st { color: var(--muted); padding: 0 6px; min-width: 56px; }
   .edit-fab { position: fixed; top: 10px; right: 10px; z-index: 700; width: 36px; height: 36px; border-radius: 50%; border: 0; background: rgba(255,255,255,.06); color: var(--muted); opacity: .25; display: grid; place-items: center; transition: opacity .2s; }
   .edit-fab:hover { opacity: 1; }
+  .views-fab { position: fixed; top: 10px; left: 10px; z-index: 700; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .vf { width: 36px; height: 36px; border-radius: 50%; border: 0; background: rgba(255,255,255,.06); color: var(--muted); opacity: .5; display: grid; place-items: center; transition: opacity .2s; }
+  .vf:hover, .open .vf { opacity: 1; }
+  .vlist { display: flex; flex-direction: column; gap: 2px; padding: 6px; border-radius: 14px; background: rgba(20,24,34,.95); box-shadow: 0 10px 30px rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.08); }
+  .vlist button { display: flex; align-items: center; gap: 10px; padding: 9px 14px 9px 10px; border: 0; border-radius: 10px; background: none; color: var(--text); font: inherit; text-align: left; white-space: nowrap; }
+  .vlist button.on { background: rgba(122,162,255,.18); }
   .offline { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 950; background: rgba(255,120,80,.9); color: #000; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; display: flex; gap: 6px; align-items: center; }
   .toasts { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 960; display: flex; flex-direction: column; gap: 6px; }
   .toast { background: #2a2f40; padding: 10px 16px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.4); font-size: 14px; }

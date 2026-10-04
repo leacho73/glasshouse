@@ -14,13 +14,13 @@ Put any card anywhere, make it any size, style it any way — and run it on a wa
 Glasshouse is a Home Assistant **add-on** that gives you a dashboard you design in the browser — no YAML, no grid. It was inspired by [ha-fusion](https://github.com/matt8707/ha-fusion), and goes further on layout freedom, styling and energy data.
 
 - **Free layout** — drag cards anywhere and drag any edge or corner to resize. Cards snap to each other's edges and sizes (with guide lines) and to a grid, and a **magnet** keeps cards joined at your usual gap: make one taller and the cards below move down, drop one into a column and it slots in. Hold Shift for pixel precision.
-- **Sidebar** — an optional sidebar that stays put (and keeps its size) while you switch views; cards move freely between sidebar and main area.
+- **Sidebar** — an optional sidebar that stays put (and keeps its size) while you switch views; cards move freely between sidebar and main area. Turn it off and its cards are kept for later.
 - **One layout, every screen** — design once for your wall tablet; desktops show it scaled, phones get an automatic single-column version. Give any device its own custom layout if you want.
 - **Made for wall tablets** — *fit the whole view on screen* (no scrolling), a kiosk mode that hides Home Assistant's header bar, and **live updates**: save on your laptop and every tablet updates within a second. After an add-on update, open screens reload themselves.
 - **Templates everywhere** — any text, icon, colour or style can be a live Home Assistant template (`{{ states('sensor.x') }}`), and any card can be shown or hidden by a template.
 - **Style anything** — background, colours, radius, border, shadow, glass blur, fonts, custom CSS, per card or for the whole theme, plus a **− / +** to scale everything inside a card.
 - **Pop-ups & actions** — tap / hold to toggle, open a detailed pop-up, open a pop-up of other cards, change view, call a service or open a URL.
-- **Groups & multi-select** — rooms move as one; select several cards to group, align or size them together. Undo, duplicate, keyboard nudging.
+- **Groups & multi-select** — rooms move as one; select several cards to group, align or size them together, or show / hide the same part on all of them at once. Copy cards to another view. Undo, duplicate, keyboard nudging.
 - **Fast** — a ~75 KB (gzipped) Svelte app that only subscribes to the entities your cards use.
 
 ## Energy, front and centre
@@ -70,6 +70,11 @@ Built for the [Octopus Energy](https://github.com/BottlecapDave/HomeAssistant-Oc
 
 Detects Samsung SmartThings washers, Home Connect (Bosch / Neff / Siemens) dishwashers, hOn (Haier / Candy / Hoover) dryers and Gecko (in.touch2) hot tubs; any other appliance can be set up by picking its entities.
 
+<table><tr>
+<td width="62%"><img src="docs/screenshots/printer.webp" alt="3D printer card"><br><sub><b>3D printer</b>: progress ring around the model, time left and finish time, layers, nozzle / bed / chamber temperatures, filament colour, Pause / Resume / Stop, light and speed (Bambu Lab printers detected automatically; OctoPrint too).</sub></td>
+<td width="38%"><img src="docs/screenshots/lock.webp" alt="Door lock card"><br><sub><b>Door lock</b>: a padlock whose shackle lifts when unlocked; tap to lock, tap twice to unlock; door sensor, battery and Open door.</sub></td>
+</tr></table>
+
 <p align="center"><img src="docs/screenshots/climate-group.webp" alt="Climate group card" width="440"><br><sub><b>Climate group</b>: upstairs and downstairs AC (or any thermostats) from one card: one target, mode and fan speed for all of them, and a row per unit to switch it or adjust it on its own.</sub></p>
 
 ## Edit in the browser
@@ -84,11 +89,11 @@ Press the faint pencil (or **E**) to edit. Add cards from the panel, drag and re
 
 ### On your phone
 
-Phones get an automatic single-column version of your main layout: navigation across the top, rooms kept together, small cards paired two-per-row. Switch phone (or desktop) to a custom layout any time.
+Phones get an automatic single-column version of your tablet layout: navigation across the top, rooms kept together, small cards paired two-per-row. Switch phone (or desktop) to a custom layout any time.
 
 ### All the cards
 
-Button / tile · Light · Thermostat (draggable dial) · Climate group (several thermostats / AC units at once) · Hot tub · Washing machine · Tumble dryer · Dishwasher · Media player (artwork, volume, source, speaker grouping) · Cover / blind · Slider · Option picker · Entities list · Glance · Sensor with graph · Gauge · History graph · Weather · Clock · Sunrise & sunset · Text / Markdown · Template lines · People · Camera · Web page · Image · Navigation · Divider · Alarm panel · and the energy cards above.
+Button / tile · Light · Thermostat (draggable dial) · Climate group (several thermostats / AC units at once) · Door lock · 3D printer · Hot tub · Washing machine · Tumble dryer · Dishwasher · Media player (artwork, volume, source, speaker grouping) · Cover / blind · Slider · Option picker · Entities list · Glance · Sensor with graph · Gauge · History graph · Weather · Clock · Sun & moon (sunrise / sunset, moon phase, moonrise / moonset) · Text / Markdown · Template lines · People · Camera · Web page · Image · Navigation · Divider · Alarm panel · and the energy cards above.
 
 ### Coming from ha-fusion?
 
@@ -104,7 +109,7 @@ Button / tile · Light · Thermostat (draggable dial) · Climate group (several 
 2. Install **Glasshouse**, start it and turn on **Show in sidebar**.
 3. Open **Glasshouse** from the sidebar and press **E** to start building.
 
-Wall tablet tips: set **Layout → Main → Sizing** to *Fit the whole view on screen* and tick *Hide Home Assistant's header bar*. Or add options to the tablet's URL:
+Wall tablet tips: set **Layout → Tablet → Sizing** to *Fit the whole view on screen* and tick *Hide Home Assistant's header bar*. Or add options to the tablet's URL:
 
 | Option | Does |
 |---|---|

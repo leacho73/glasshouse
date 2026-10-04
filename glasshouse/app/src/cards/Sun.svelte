@@ -2,11 +2,12 @@
   export const meta = {
     type: 'sun', name: 'Sunrise & sunset', icon: 'mdi:weather-sunset', category: 'Info',
     size: { w: 400, h: 240 }, tap: 'none',
-    defaults: { name: 'Sun', show_twilight: true, show_length: true },
+    defaults: { name: 'Sun', show_twilight: true, show_length: true, show_moon: true },
     fields: [
       { key: 'name', label: 'Title', type: 'text' },
       { key: 'show_twilight', label: 'Show dawn and dusk (when there is room)', type: 'bool' },
       { key: 'show_length', label: 'Show day length (when there is room)', type: 'bool' },
+      { key: 'show_moon', label: 'Show the moon: its path and phase, and moonrise / moonset when there is room', type: 'bool' },
       { key: 'hour12', label: '12-hour', type: 'bool' },
     ],
   };
@@ -25,7 +26,7 @@
 <script>
   import { t } from '../lib/tpl.js';
   import { clock } from '../lib/clock.svelte.js';
-  import { sunDay } from '../lib/sun.js';
+  import { sunDay, moonDay, moonPhase, moonName } from '../lib/sun.js';
   import Icon from '../components/Icon.svelte';
   let { props, w = 400, h = 240 } = $props();
 
@@ -39,6 +40,11 @@
   const tomorrow = $derived(today ? sunDay(today.end + 12 * 3600e3, home.lat, home.lon, home.height) : null);
 
   const now = $derived(clock.now);
+  // The moon: today's path, and its phase right now.
+  const showMoon = $derived(props.show_moon !== false);
+  const moon = $derived(ready && showMoon ? moonDay(dayStart + 12 * 3600e3, home.lat, home.lon) : null);
+  const phase = $derived(ready && showMoon ? moonPhase(now) : null);
+  const moonUp = $derived(moon ? (moon.pts.reduce((b, p) => (Math.abs(p[0] - now) < Math.abs(b[0] - now) ? p : b))[1] > 0) : false);
   const up = $derived(today && today.rise && today.set ? now >= today.rise && now < today.set : today?.maxElev > 0);
   // What happens next, and when.
   const next = $derived.by(() => {
@@ -73,14 +79,25 @@
   const chart = $derived.by(() => {
     if (!today || cw < 20 || ch < 20) return null;
     const hy = Math.round(ch * (strip ? 0.82 : 0.7));
-    const top = Math.max(1, today.maxElev), bot = Math.max(1, -today.minElev);
+    const top = Math.max(1, today.maxElev, moon?.maxElev ?? 0), bot = Math.max(1, -today.minElev, -(moon?.minElev ?? 0));
     const X = (x) => PAD + ((x - today.start) / (today.end - today.start)) * (cw - PAD * 2);
     const Y = (e) => (e >= 0 ? hy - (e / top) * (hy - PAD) : hy + (-e / bot) * (ch - hy - 4));
     const path = today.pts.map(([x, e], i) => `${i ? 'L' : 'M'}${X(x).toFixed(1)},${Y(e).toFixed(1)}`).join('');
     const nowE = today.pts.reduce((b, p) => (Math.abs(p[0] - now) < Math.abs(b[0] - now) ? p : b))[1];
-    return { hy, path, area: `${path}L${X(today.end)},${hy}L${X(today.start)},${hy}Z`, sx: X(now), sy: Y(nowE), rx: today.rise && X(today.rise), setx: today.set && X(today.set) };
+    const near = (pts) => pts.reduce((b, p) => (Math.abs(p[0] - now) < Math.abs(b[0] - now) ? p : b))[1];
+    const mpath = moon ? moon.pts.map(([x, e], i) => `${i ? 'L' : 'M'}${X(x).toFixed(1)},${Y(e).toFixed(1)}`).join('') : null;
+    return { hy, path, area: `${path}L${X(today.end)},${hy}L${X(today.start)},${hy}Z`, sx: X(now), sy: Y(nowE), rx: today.rise && X(today.rise), setx: today.set && X(today.set),
+      mpath, my: moon ? Y(near(moon.pts)) : null };
   });
   const uid = Math.random().toString(36).slice(2, 8);
+  // The lit part of the moon as a path: the bright limb, then the terminator
+  // (an ellipse) back. Lit on the right while waxing (left south of the equator).
+  function moonLit(cx, cy, r, f, p) {
+    const right = (p < 0.5) !== (home.lat < 0);
+    const rx = r * Math.abs(2 * f - 1), gib = f > 0.5;
+    const s1 = right ? 1 : 0, s2 = right === gib ? 1 : 0;
+    return `M${cx},${cy - r}A${r},${r} 0 0 ${s1} ${cx},${cy + r}A${rx.toFixed(2)},${r} 0 0 ${s2} ${cx},${cy - r}Z`;
+  }
 </script>
 
 <div class="sun" class:strip class:tall class:narrow class:mini class:night={!up}>
@@ -110,6 +127,15 @@
           <line x1="0" x2={cw} y1={chart.hy} y2={chart.hy} stroke="var(--muted)" stroke-opacity=".35" />
           {#if chart.rx}<circle cx={chart.rx} cy={chart.hy} r="2.5" fill="var(--sun)" />{/if}
           {#if chart.setx}<circle cx={chart.setx} cy={chart.hy} r="2.5" fill="var(--sun)" />{/if}
+          {#if chart.mpath}<path d={chart.mpath} fill="none" stroke="var(--moon)" stroke-opacity=".45" stroke-width="1.25" clip-path="url(#above-{uid})" />{/if}
+          {#if phase && chart.my != null}
+            {@const r = strip ? 5 : 7}
+            <g class="moon" class:down={!moonUp}>
+              {#if moonUp && !up}<circle cx={chart.sx} cy={chart.my} r={r * 2.4} fill="var(--moon)" opacity=".12" />{/if}
+              <circle cx={chart.sx} cy={chart.my} r={r} fill="var(--night)" stroke="var(--moon)" stroke-opacity=".35" />
+              <path d={moonLit(chart.sx, chart.my, r, phase.fraction, phase.phase)} fill="var(--moon)" />
+            </g>
+          {/if}
           {#if up}<circle cx={chart.sx} cy={chart.sy} r={strip ? 12 : 18} fill="url(#glow-{uid})" />{/if}
           <circle cx={chart.sx} cy={chart.sy} r={strip ? 5 : 7} fill={up ? 'var(--sun)' : 'var(--night)'} stroke={up ? 'none' : 'var(--muted)'} stroke-opacity=".6" />
         </svg>
@@ -122,6 +148,14 @@
       <div class="t end"><Icon icon="mdi:weather-sunset-down" size="1.1em" /><b>{tm(today.set)}</b>{#if !strip}<small>Sunset</small>{/if}</div>
     </div>
 
+    {#if tall && moon && phase && h >= 300}
+      <div class="mrow">
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9" fill="var(--night)" stroke="var(--moon)" stroke-opacity=".35" /><path d={moonLit(11, 11, 9, phase.fraction, phase.phase)} fill="var(--moon)" /></svg>
+        <div class="mn"><b>{moonName(phase.phase, phase.fraction)}</b><small>{Math.round(phase.fraction * 100)}% lit</small></div>
+        <div class="mt"><small>Moonrise</small><b>{tm(moon.rise)}</b></div>
+        <div class="mt"><small>Moonset</small><b>{tm(moon.set)}</b></div>
+      </div>
+    {/if}
     {#if tall && (props.show_twilight !== false || props.show_length !== false)}
       <div class="more">
         {#if props.show_twilight !== false}
@@ -137,7 +171,7 @@
 </div>
 
 <style>
-  .sun { --sun: #ffb547; --night: #1d2333; height: 100%; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+  .sun { --sun: #ffb547; --night: #1d2333; --moon: #dfe6f5; height: 100%; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
   .wait { margin: auto; color: var(--muted); display: flex; gap: 8px; align-items: center; font-size: .9em; }
   .head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; white-space: nowrap; }
   .title { display: flex; align-items: center; gap: 8px; font-weight: 600; min-width: 0; }
@@ -163,6 +197,13 @@
   .more b { font-weight: 600; }
   .more em { font-style: normal; font-size: .72em; color: var(--muted); }
   .more em.gain { color: #5bd88f; }
+  .moon.down { opacity: .4; }
+  .mrow { display: flex; align-items: center; gap: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.07); font-variant-numeric: tabular-nums; }
+  .mrow svg { flex: none; }
+  .mn { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .mn b, .mt b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mn small, .mt small { color: var(--muted); font-size: .72em; }
+  .mt { display: flex; flex-direction: column; text-align: right; }
 
   /* Thin strip: title and countdown on one line, a small path, times either side. */
   .strip { display: grid; grid-template-columns: auto 1fr auto; grid-template-rows: auto 1fr; column-gap: 12px; row-gap: 0; }

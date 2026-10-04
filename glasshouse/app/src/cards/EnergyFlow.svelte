@@ -12,6 +12,8 @@
       solar: first(/^sensor\.solar_panel_production_w$/, /^sensor\.solaredge_(i\d_)?ac_power$/, /^sensor\.solar_production_w$/),
       home: first(/^sensor\.solar_house_consumption_w$/, /^sensor\.house_power$/),
       battery_soc: first(/^sensor\.solaredge_(i\d_)?b\d_state_of_energy$/, /^sensor\.battery_level$/),
+      // SolarEdge reports battery DC power as + charging, so it's inverted.
+      ...(find(/^sensor\.solaredge_(i\d_)?b\d_dc_power$/) ? { battery: find(/^sensor\.solaredge_(i\d_)?b\d_dc_power$/), battery_invert: true } : { battery: first(/^sensor\.battery_power$/) }),
       grid_import: first(/^sensor\.solar_imported_power_w$/),
       grid_export: first(/^sensor\.solar_exported_power_w$/),
       solar_home: first(/^sensor\.solar_panel_to_house_w$/),
@@ -75,7 +77,22 @@
   // covers the rest of the house; the grid makes up anything left.
   const routes = $derived.by(() => {
     const given = { sh: props.solar_home, sb: props.solar_battery, sg: props.solar_grid, bh: props.battery_home, bg: props.battery_grid, gh: props.grid_home, gb: props.grid_battery };
-    if (Object.values(given).some(Boolean)) return Object.fromEntries(Object.entries(given).map(([k, id]) => [k, pos(watts(id))]));
+    if (Object.values(given).some(Boolean)) {
+      const r = Object.fromEntries(Object.entries(given).map(([k, id]) => [k, pos(watts(id))]));
+      // Route sensors are often templates that don't quite add up (e.g. battery
+      // → house missing the inverter's share). Trust the totals where we have them.
+      if (batt != null) {
+        const dis = pos(batt), charge = pos(-batt);
+        if (Math.abs(r.bh + r.bg - dis) > 50) r.bh = pos(dis - r.bg);
+        if (Math.abs(r.sb + r.gb - charge) > 50) r.gb = pos(charge - r.sb);
+      } else if (props.home) {
+        // No battery power sensor: whatever the house uses that solar and the
+        // grid don't cover is coming from the battery.
+        const short = pos(watts(props.home)) - r.sh - r.bh - r.gh;
+        if (short > 50 && (r.bh > 0 || r.bg > 0)) r.bh += short;
+      }
+      return r;
+    }
     const b = batt ?? 0, charge = pos(-b), dis = pos(b), imp = pos(grid), exp = pos(-grid);
     const house = props.home ? pos(watts(props.home)) : pos(solar + grid + b);
     const sh = Math.min(solar, house), sb = Math.min(solar - sh, charge), sg = Math.min(pos(solar - sh - sb), exp);

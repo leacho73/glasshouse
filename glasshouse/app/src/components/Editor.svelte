@@ -5,7 +5,7 @@
   import { cards, categories } from '../lib/registry.js';
   import {
     app, layout, DEVICES, DEFAULT_THEME, changed, addCard, selectedCard, selectedPlacement, removeSelected,
-    duplicateSelected, copyLayout, importConfig, selectionSet, groupSelected, ungroupSelected, ensureEditable, setMode, MODES, DISPLAYS, zoneList, addView, removeView, setView, isPlacedAnywhere, placeExisting, zoneWidth, setMainWidth,
+    duplicateSelected, copyToView, copyLayout, importConfig, selectionSet, groupSelected, ungroupSelected, ensureEditable, setMode, MODES, DISPLAYS, zoneList, addView, removeView, setView, isPlacedAnywhere, placeExisting, zoneWidth, setMainWidth,
   } from '../lib/config.svelte.js';
 
   import { fromFusion } from '../lib/fusion.js';
@@ -104,6 +104,34 @@
     card.props.hide[k] = !card.props.hide[k];
     changed();
   }
+  // With several cards selected: their card types, each with the cards of that
+  // type, so a section can be shown / hidden on all of them at once.
+  const multiTypes = $derived.by(() => {
+    if (multiCount < 2 || !app.selected) return [];
+    const list = zoneList(app.selected.zone);
+    const by = new Map();
+    for (const i of selectionSet()) {
+      const c = app.config.cards[list[i]?.card];
+      const m = cards[c?.type]?.meta;
+      if (!m || !(m.sections?.length || m.fields?.some((f) => f.type === 'bool'))) continue;
+      if (!by.has(c.type)) by.set(c.type, []);
+      by.get(c.type).push(c);
+    }
+    return [...by].map(([type, list]) => ({ type, meta: cards[type].meta, list }));
+  });
+  const allHidden = (list, k) => list.every((c) => c.props.hide?.[k]);
+  // On / off settings (e.g. "Show state") can be set on all of them too.
+  const boolOf = (c, f) => c.props[f.key] ?? cards[c.type].meta.defaults?.[f.key] ?? false;
+  function toggleBoolAll(list, f) {
+    const v = !list.every((c) => boolOf(c, f));
+    for (const c of list) c.props[f.key] = v;
+    changed();
+  }
+  function toggleSectionAll(list, k) {
+    const hide = !allHidden(list, k);
+    for (const c of list) { c.props.hide ??= {}; c.props.hide[k] = hide; }
+    changed();
+  }
 </script>
 
 <aside class="ed">
@@ -151,8 +179,24 @@
             <button class="sm" onclick={() => align(k)} title={k === 'width' || k === 'height' ? `Same ${k}` : `Align ${k}`}><Icon icon={ic} size="1.1em" /> {k === 'width' || k === 'height' ? `Same ${k}` : `Align ${k}`}</button>
           {/each}
         </div>
+        {#each multiTypes as g (g.type)}
+          <h4>{g.list.length > 1 ? `All ${g.list.length}` : 'The'} {g.meta.name} card{g.list.length > 1 ? 's' : ''}</h4>
+          <div class="secs">
+            {#each g.meta.fields.filter((f) => f.type === 'bool') as f (f.key)}
+              {@const on = g.list.every((c) => boolOf(c, f))}
+              {@const some = !on && g.list.some((c) => boolOf(c, f))}
+              <button class:off={!on && !some} class:some onclick={() => toggleBoolAll(g.list, f)}><Icon icon={on ? 'mdi:check' : some ? 'mdi:minus' : 'mdi:close'} size="1em" /> {f.label}</button>
+            {/each}
+            {#each g.meta.sections || [] as sct}
+              {@const off = allHidden(g.list, sct.key)}
+              {@const some = !off && g.list.some((c) => c.props.hide?.[sct.key])}
+              <button class:off class:some onclick={() => toggleSectionAll(g.list, sct.key)} title={some ? 'Hidden on some of them: tap to hide on all' : ''}><Icon icon={off ? 'mdi:eye-off-outline' : some ? 'mdi:eye-minus-outline' : 'mdi:eye'} size="1em" /> {sct.label}</button>
+            {/each}
+          </div>
+        {/each}
         <p class="hint">Drag any selected card to move them all. Shift/Ctrl-click to add or remove cards; drag a box on empty space to select.</p>
         <div class="row danger">
+          <select class="sm" value="" onchange={(e) => { const v = e.currentTarget.value; e.currentTarget.value = ''; if (v) copyToView(v); }} title="Copy to another view"><option value="">Copy to view…</option>{#each app.config.views as v (v.id)}<option value={v.id}>{v.name}{v.id === app.view ? ' (this view)' : ''}</option>{/each}</select>
           <button class="sm" onclick={() => removeSelected(false)}><Icon icon="mdi:eye-off-outline" size="1em" /> Unplace</button>
           <button class="sm red" onclick={() => confirm(`Delete ${multiCount} cards from every layout?`) && removeSelected(true)}><Icon icon="mdi:delete-outline" size="1em" /> Delete</button>
         </div>
@@ -207,23 +251,24 @@
         {/if}
         <div class="row danger">
           <button class="sm" onclick={duplicateSelected}><Icon icon="mdi:content-copy" size="1em" /> Duplicate</button>
+          <select class="sm" value="" onchange={(e) => { const v = e.currentTarget.value; e.currentTarget.value = ''; if (v) copyToView(v); }} title="Copy to another view"><option value="">Copy to view…</option>{#each app.config.views as v (v.id)}<option value={v.id}>{v.name}{v.id === app.view ? ' (this view)' : ''}</option>{/each}</select>
           <button class="sm" onclick={() => removeSelected(false)} title="Remove from this layout (keeps the card for pop-ups / other devices)"><Icon icon="mdi:eye-off-outline" size="1em" /> Unplace{multiCount > 1 ? ' group' : ''}</button>
           <button class="sm red" onclick={() => (multiCount < 2 || confirm(`Delete all ${multiCount} cards in this group?`)) && removeSelected(true)}><Icon icon="mdi:delete-outline" size="1em" /> Delete{multiCount > 1 ? ` group (${multiCount})` : ''}</button>
         </div>
       {/if}
     {:else if app.panel === 'layout'}
       <h4>Devices</h4>
-      <p class="hint">This screen: {innerWidth}×{innerHeight}, showing <b>{DEVICES[app.device].label === 'Main' ? 'Tablet (main)' : DEVICES[app.device].label}</b>{param('device') ? ' (set by ?device= in the address)' : ''}.</p>
+      <p class="hint">This screen: {innerWidth}×{innerHeight}, showing <b>{DEVICES[app.device].label}</b>{param('device') ? ' (set by ?device= in the address)' : ''}.</p>
       <div class="row seg">
         {#each Object.entries(DEVICES) as [k, d]}<button class:on={app.device === k} onclick={() => { app.device = k; app.selected = null; app.multi = []; }}>{d.label}</button>{/each}
       </div>
       {#if app.device === 'tablet'}
-        <p class="hint">The <b>main layout</b> is shown on every device unless you give a device its own. Pin a screen to a device with <code>?device=phone</code> / <code>desktop</code> in the URL.</p>
+        <p class="hint">The <b>tablet layout</b> is the main one: phones and desktops show it too unless you give them their own. Pin a screen to a device with <code>?device=phone</code> / <code>desktop</code> in the URL.</p>
       {:else}
         <div class="fields">
           <Field obj={{ mode: app.config.layouts[app.device].mode }} f={{ key: 'mode', label: `${DEVICES[app.device].label} shows`, type: 'select', options: Object.entries(MODES).map(([value, label]) => ({ value, label })) }} onset={(v) => (v === 'custom' || confirm('Discard this device\'s own layout?')) && setMode(app.device, v)} />
         </div>
-        <p class="hint">{app.config.layouts[app.device].mode === 'custom' ? 'This device has its own layout. Cards added anywhere are still added here too.' : 'Edits here change the main layout' + (app.config.layouts[app.device].mode === 'auto' ? ' — or drag something to start a custom phone layout.' : '.')}</p>
+        <p class="hint">{app.config.layouts[app.device].mode === 'custom' ? 'This device has its own layout. Cards added anywhere are still added here too.' : 'Edits here change the tablet layout' + (app.config.layouts[app.device].mode === 'auto' ? ' — or drag something to start a custom phone layout.' : '.')}</p>
       {/if}
       <div class="fields">
         <Field obj={app.config.layouts[app.device]} f={{ key: 'kiosk', label: `Hide Home Assistant's header bar on ${app.device === 'tablet' ? 'tablets' : DEVICES[app.device].label.toLowerCase() + 's'}`, type: 'bool' }} />
@@ -236,6 +281,7 @@
         <h4>Sidebar</h4>
         <div class="fields">
           <Field obj={layout().sidebar} f={{ key: 'enabled', label: 'Show sidebar', type: 'bool' }} onset={(v) => setMainWidth((l) => (l.sidebar.enabled = v))} />
+          {#if !layout().sidebar.enabled}<p class="hint">Hidden: its cards are kept and come back when you show it again. Without it, views with no Navigation card get a small views menu in the top corner.</p>{/if}
           <Field obj={layout().sidebar} f={{ key: 'side', label: 'Side', type: 'select', options: ['left', 'right'] }} />
           <Field obj={layout().sidebar} f={{ key: 'width', label: 'Width', type: 'number' }} onset={(v) => setMainWidth((l) => (l.sidebar.width = v))} />
           {#if app.config.layouts[app.device].display === 'screen'}
@@ -244,7 +290,7 @@
         </div>
       {/if}
       {#if app.device !== 'tablet' && app.config.layouts[app.device].mode === 'custom'}
-        <div class="row"><button class="sm" onclick={() => confirm('Replace with the main layout scaled to fit?') && copyLayout('tablet')}>Copy from main layout</button></div>
+        <div class="row"><button class="sm" onclick={() => confirm('Replace with the tablet layout scaled to fit?') && copyLayout('tablet')}>Copy from tablet layout</button></div>
       {/if}
       <h4>Import</h4>
       <button class="sm" disabled={importing} onclick={importFusion}><Icon icon="mdi:import" size="1em" /> {importing ? 'Importing…' : 'Import from ha-fusion'}</button>
@@ -306,11 +352,13 @@
   .view { padding: 10px; border-radius: 12px; background: rgba(255,255,255,.03); display: flex; flex-direction: column; gap: 8px; }
   .view.cur { outline: 1px solid rgba(122,162,255,.4); }
   .file input { display: none; }
+  select.sm { appearance: auto; padding: 6px 8px; }
   .grp { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); background: rgba(122,162,255,.08); border-radius: 10px; padding: 8px 10px; }
   .grp span { flex: 1; min-width: 150px; }
   .secs { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
   .secs .lbl { font-size: 12px; color: var(--muted); margin-right: 2px; }
   .secs button { display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(122,162,255,.4); background: rgba(122,162,255,.12); color: var(--text); border-radius: 20px; padding: 4px 10px; font-size: 12px; }
+  .secs button.some { border-style: dashed; }
   .secs button.off { border-color: rgba(255,255,255,.1); background: none; color: var(--muted); text-decoration: line-through; }
   code { background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 5px; }
 </style>

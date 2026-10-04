@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.23.0
+
+- **3D printer card.** A progress ring around a picture of the model, what it's printing, time left and finish time, layers, nozzle / bed / chamber temperatures, the filament in use and its colour, Pause / Resume, Stop (asks first), the chamber light and print speed. Bambu Lab printers fill in automatically (the online one is picked); OctoPrint gets the basics. Wide, tall and single-row layouts.
+- **Door lock card.** A big padlock whose shackle lifts when it's unlocked, coloured by state. Tap to lock; unlocking takes a second tap (or choose lock and unlock, or never). Optional door sensor, battery and an Open door button for locks that can release the latch. Small cards become a row with a Lock / Unlock button.
+- **The moon on the Sun card.** Its path through the day alongside the sun's, and a disc showing tonight's shape (crescent, half, gibbous, full). Taller cards add the phase, how much is lit, and moonrise and moonset. Worked out from your location; no sensor needed. **Show the moon** turns it off.
+- **Change several cards at once.** Select cards of the same type and show or hide a part (e.g. the light card's warm / cool and colour dots) or flip an on / off setting on all of them with one tap.
+- **Copy to another view.** Next to Duplicate: copies the selected card(s) to another view, in the same spot if it's free there, otherwise underneath.
+- **Cover card:** the icon, state, buttons and slider can each be hidden, and the buttons drop underneath when the slider is hidden or the card is narrow, so the name isn't squashed.
+- **Main is now called Tablet**, and the phone / desktop options read *Same as tablet*, *Automatic*, *Its own layout* (the picker at the bottom shows e.g. *Phone (automatic)*).
+- **No sidebar:** turning it off keeps its cards for later, and views without a Navigation card get a small views menu in the corner.
+- Fixed: the Energy flow card trusted route sensors that didn't add up, e.g. showing the battery at 2.4 kW when it was supplying 3.4 kW. Routes are now checked against the battery power sensor or the house total. SolarEdge's battery power sensor is picked up automatically for new cards.
+
 ## 0.22.1
 
 - Fixed: making a Climate group card a bit shorter switched it to the side-by-side layout while it still had spare space. It now loses the spare space first and only goes side by side once the unit rows no longer fit underneath.

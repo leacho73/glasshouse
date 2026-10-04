@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.20.2
+
+- Fixed: the Energy flow card cut small flows (e.g. 45 W of export next to 2 kW of solar) off the bottom of the chart. Every flow now gets a visible band and a bar tall enough for its label, and labels never overlap or run off the edge.
+
 ## 0.20.1
 
 - Fixed: in the editor, pressing on any card made a long, scrolled sidebar jump back to the top until you let go. The sidebar now stays put, and dragging cards in and out of it still works.

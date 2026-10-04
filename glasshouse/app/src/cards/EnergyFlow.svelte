@@ -106,20 +106,42 @@
     if (!total || cw < 80 || ch < 40) return null;
     const srcs = SRC.filter(([id]) => flows.some((f) => f.from === id));
     const dsts = DST.filter(([id]) => flows.some((f) => f.to === id));
-    const scale = (ch - GAP * (Math.max(srcs.length, dsts.length) - 1)) / total;
+    // Small routes (e.g. 45 W of export next to 2 kW) still get a visible band
+    // and each end a bar tall enough to label; the rest shrinks to make room.
+    const MIN_TH = 3, MIN_NODE = 14;
+    const nodeH = (id, side, sc) => Math.max(MIN_NODE, flows.filter((f) => f[side] === id).reduce((a, f) => a + Math.max(MIN_TH, f.v * sc), 0));
+    const height = (list, side, sc) => list.reduce((a, [id]) => a + nodeH(id, side, sc), 0) + GAP * (list.length - 1);
+    let scale = (ch - GAP * (Math.max(srcs.length, dsts.length) - 1)) / total;
+    for (let i = 0; i < 8; i++) {
+      const tall = Math.max(height(srcs, 'from', scale), height(dsts, 'to', scale));
+      if (tall <= ch + 0.5) break;
+      scale *= Math.max(0.5, (ch - (tall - total * scale)) / (total * scale));
+    }
+    const thick = (f) => Math.max(MIN_TH, f.v * scale);
     const stack = (list, side) => {
-      let y = (ch - (flows.reduce((a, f) => a + f.v, 0) * scale + GAP * (list.length - 1))) / 2;
+      let y = Math.max(0, (ch - height(list, side, scale)) / 2);
       return Object.fromEntries(list.map(([id, label, c]) => {
-        const v = flows.filter((f) => f[side] === id).reduce((a, f) => a + f.v, 0);
-        const n = { id, label, c, v, y, h: v * scale, at: y };
+        const mine = flows.filter((f) => f[side] === id);
+        const v = mine.reduce((a, f) => a + f.v, 0), bandH = mine.reduce((a, f) => a + thick(f), 0);
+        const n = { id, label, c, v, y, h: nodeH(id, side, scale), at: 0 };
+        n.at = y + (n.h - bandH) / 2;
         y += n.h + GAP;
         return [id, n];
       }));
     };
     const L = stack(srcs, 'from'), R = stack(dsts, 'to');
+    // Labels: centred on their bar, nudged apart so they never overlap or leave the chart.
+    for (const side of [L, R]) {
+      const ns = Object.values(side);
+      ns.forEach((n) => (n.ly = n.y + n.h / 2));
+      for (let i = 1; i < ns.length; i++) ns[i].ly = Math.max(ns[i].ly, ns[i - 1].ly + 14);
+      if (ns.length) ns[ns.length - 1].ly = Math.min(ns[ns.length - 1].ly, ch - 7);
+      for (let i = ns.length - 2; i >= 0; i--) ns[i].ly = Math.min(ns[i].ly, ns[i + 1].ly - 14);
+      ns.forEach((n) => (n.ly = Math.max(7, n.ly)));
+    }
     const x0 = BAR, x1 = cw - BAR, mx = (x0 + x1) / 2;
     const bands = flows.map((f) => {
-      const a = L[f.from], b = R[f.to], th = f.v * scale;
+      const a = L[f.from], b = R[f.to], th = thick(f);
       const ya = a.at, yb = b.at;
       a.at += th; b.at += th;
       const d = `M${x0},${ya} C${mx},${ya} ${mx},${yb} ${x1},${yb} L${x1},${yb + th} C${mx},${yb + th} ${mx},${ya + th} ${x0},${ya + th} Z`;
@@ -184,8 +206,8 @@
           {/each}
           {#each chart.L as n}<rect x="0" y={n.y} width={BAR} height={Math.max(2, n.h)} rx="3" fill={n.c} />{/each}
           {#each chart.R as n}<rect x={cw - BAR} y={n.y} width={BAR} height={Math.max(2, n.h)} rx="3" fill={n.c} />{/each}
-          {#each chart.L as n}<text x={BAR + 7} y={n.y + n.h / 2} dominant-baseline="middle" class="nl">{n.label} <tspan>{kfmt(n.v)}</tspan></text>{/each}
-          {#each chart.R as n}<text x={cw - BAR - 7} y={n.y + n.h / 2} dominant-baseline="middle" text-anchor="end" class="nl">{n.label} <tspan>{kfmt(n.v)}</tspan></text>{/each}
+          {#each chart.L as n}<text x={BAR + 7} y={n.ly} dominant-baseline="middle" class="nl">{n.label} <tspan>{kfmt(n.v)}</tspan></text>{/each}
+          {#each chart.R as n}<text x={cw - BAR - 7} y={n.ly} dominant-baseline="middle" text-anchor="end" class="nl">{n.label} <tspan>{kfmt(n.v)}</tspan></text>{/each}
         </svg>
       {:else}
         <div class="none">Nothing flowing right now</div>

@@ -10,7 +10,7 @@ Open **Panalume** in the HA sidebar. Press the faint pencil (top-right) or **E**
 - **Show / hide parts** of bigger cards (EV, Octopus, heat pump…) with the chips at the top of Content or the eye next to each field.
 - **Theme**: colours, fonts (Google Fonts URL), card glass/blur (set blur 0 on slow tablets), global CSS.
 
-Config is stored in the add-on's `/data/dashboard.json` (Layout → Export for a backup).
+Config is stored in the app's `/data/dashboard.json` (Layout → Export for a backup).
 
 ## Energy cards
 
@@ -27,4 +27,4 @@ Added from **Add → Energy**; entities are auto-detected for the Octopus Energy
 
 ## Import from ha-fusion
 
-Edit → **Layout → Import from ha-fusion** rebuilds the dashboard from your ha-fusion add-on: views, rooms, buttons (their state / name / icon / colour / service templates keep working, including `entity_id`), cameras and sidebar items, with tablet, phone and desktop layouts. An **Energy** view is added from auto-detected Octopus / myenergi / solar / EV entities. Icons from other sets (`tabler:`, `mingcute:`, `solar:` …) load from Iconify.
+Edit → **Layout → Import from ha-fusion** rebuilds the dashboard from your ha-fusion app: views, rooms, buttons (their state / name / icon / colour / service templates keep working, including `entity_id`), cameras and sidebar items, with tablet, phone and desktop layouts. An **Energy** view is added from auto-detected Octopus / myenergi / solar / EV entities. Icons from other sets (`tabler:`, `mingcute:`, `solar:` …) load from Iconify.

@@ -13,12 +13,12 @@ Put any card anywhere, make it any size, style it any way — and run it on a wa
 
 ## Why Panalume?
 
-Panalume is a Home Assistant **add-on** that gives you a dashboard you design in the browser — no YAML, no grid. It was inspired by [ha-fusion](https://github.com/matt8707/ha-fusion), and goes further on layout freedom, styling and energy data.
+Panalume is a Home Assistant **app** that gives you a dashboard you design in the browser — no YAML, no grid. It was inspired by [ha-fusion](https://github.com/matt8707/ha-fusion), and goes further on layout freedom, styling and energy data.
 
 - **Free layout** — drag cards anywhere and drag any edge or corner to resize. Cards snap to each other's edges and sizes (with guide lines) and to a grid, and a **magnet** keeps cards joined at your usual gap: make one taller and the cards below move down, drop one into a column and it slots in. Hold Shift for pixel precision.
 - **Sidebar** — an optional sidebar that stays put (and keeps its size) while you switch views; cards move freely between sidebar and main area. Turn it off and its cards are kept for later.
 - **One layout, every screen** — design once for your wall tablet; desktops show it scaled, phones get an automatic single-column version. Give any device its own custom layout if you want.
-- **Made for wall tablets** — *fit the whole view on screen* (no scrolling), a kiosk mode that hides Home Assistant's header bar, and **live updates**: save on your laptop and every tablet updates within a second. After an add-on update, open screens reload themselves.
+- **Made for wall tablets** — *fit the whole view on screen* (no scrolling), a kiosk mode that hides Home Assistant's header bar, and **live updates**: save on your laptop and every tablet updates within a second. After an app update, open screens reload themselves.
 - **Templates everywhere** — any text, icon, colour or style can be a live Home Assistant template (`{{ states('sensor.x') }}`), and any card can be shown or hidden by a template.
 - **Style anything** — background, colours, radius, border, shadow, glass blur, fonts, custom CSS, per card or for the whole theme, plus a **− / +** to scale everything inside a card.
 - **Pop-ups & actions** — tap / hold to toggle, open a detailed pop-up, open a pop-up of other cards, change view, call a service or open a URL.
@@ -108,7 +108,7 @@ Button / tile · Light · Thermostat (draggable dial) · Climate group (several 
 
 > **Beta:** Panalume is in beta until 1.0: used every day, but expect changes. Please report problems and ideas in [Issues](https://github.com/leacho73/panalume/issues). Each update has [release notes](https://github.com/leacho73/panalume/releases).
 
-1. In Home Assistant go to **Settings → Add-ons → Add-on Store → ⋮ → Repositories** and add  
+1. In Home Assistant go to **Settings → Apps → App Store → ⋮ → Repositories** and add  
    `https://github.com/leacho73/panalume`
 2. Install **Panalume**, start it and turn on **Show in sidebar**.
 3. Open **Panalume** from the sidebar and press **E** to start building.

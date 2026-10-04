@@ -13,11 +13,11 @@ ol{padding-left:1.3em}li{margin:6px 0}b{color:#fff}p{color:#aab3c5}</style></hea
 <h1>Glasshouse is now Panalume</h1>
 <p>Same dashboard, new name. Your layout comes with you automatically.</p>
 <ol>
-<li>In Home Assistant, open <b>Settings → Add-ons → Add-on Store</b> and install <b>Panalume</b> (it's in the same repository).</li>
+<li>In Home Assistant, open <b>Settings → Apps → App Store</b> and install <b>Panalume</b> (it's in the same repository).</li>
 <li>Start it, turn on <b>Show in sidebar</b> and open it. It copies your dashboard from Glasshouse within a few seconds.</li>
 <li>Check everything's there, point any wall tablets at Panalume, then uninstall <b>Glasshouse (now Panalume)</b>.</li>
 </ol>
-<p>If your layout doesn't appear, keep this add-on running and restart Panalume.</p>
+<p>If your layout doesn't appear, keep this app running and restart Panalume.</p>
 </main></body></html>`;
 
 http.createServer((req, res) => {

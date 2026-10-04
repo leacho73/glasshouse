@@ -3,7 +3,7 @@
 ## 0.24.0
 
 - **Glasshouse is now Panalume.** Same dashboard, new name: another Home Assistant dashboard, GlassHome, has a very similar one. To move across:
-  1. In **Settings → Add-ons → Add-on Store**, install **Panalume** (same repository; it appears next to Glasshouse).
+  1. In **Settings → Apps → App Store**, install **Panalume** (same repository; it appears next to Glasshouse).
   2. Start it, turn on **Show in sidebar** and open it. If Glasshouse is still running, Panalume copies your whole dashboard from it within a few seconds; nothing to export or import.
   3. Check it's all there, point wall tablets at Panalume (any `?view=…` / `&kiosk` options carry over), then uninstall Glasshouse.
 

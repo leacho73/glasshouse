@@ -338,18 +338,32 @@
               const c = list[m], bottom = c.y + c.h;
               if (bottom <= A[m].y + A[m].h) continue;
               A.forEach((q, j) => {
-                if (moved.has(j) || !overlaps(c.x, c.x + c.w, q.x, q.x + q.w)) return;
+                if (j === m || j === op.index || !overlaps(c.x, c.x + c.w, q.x, q.x + q.w)) return;
                 if (q.y < A[m].y + A[m].h - 4 || list[j].y >= bottom + op.G) return; // above it, or not reached yet
+                // (A card pushed already can be pushed further by another, so a row stays level.)
                 const dy = bottom + op.G - list[j].y;
-                for (const k of [j, ...links(A, j, 's', op.G)]) if (!moved.has(k)) { list[k].y += dy; moved.add(k); op.bumped.push(k); }
+                for (const k of [j, ...links(A, j, 's', op.G)]) if (k !== op.index) { list[k].y += dy; if (!moved.has(k)) { moved.add(k); op.bumped.push(k); } }
                 more = true;
               });
             }
           }
         }
-        for (const j of op.link.e || []) { const w = Math.max(MIN, A[j].w - dr); list[j].x = A[j].x + A[j].w - w; list[j].w = w; }
-        for (const j of op.link.w || []) list[j].w = Math.max(MIN, A[j].w + dl);
-        for (const j of op.link.n || []) list[j].h = Math.max(MIN, A[j].h + dt);
+        // A neighbour that grows into the freed space stops at the usual gap from
+        // any other card in its way.
+        const others = (j) => list.filter((q, k) => k !== j && k !== op.index);
+        for (const j of op.link.e || []) {
+          const lim = Math.max(-Infinity, ...others(j).filter((q) => overlaps(A[j].y, A[j].y + A[j].h, q.y, q.y + q.h) && q.x + q.w <= A[j].x + 4).map((q) => q.x + q.w + op.G));
+          const x = Math.min(A[j].x + A[j].w - MIN, Math.max(A[j].x + dr, Math.min(A[j].x, lim)));
+          list[j].w = A[j].x + A[j].w - x; list[j].x = x;
+        }
+        for (const j of op.link.w || []) {
+          const lim = Math.min(Infinity, ...others(j).filter((q) => overlaps(A[j].y, A[j].y + A[j].h, q.y, q.y + q.h) && q.x >= A[j].x + A[j].w - 4).map((q) => q.x - op.G));
+          list[j].w = Math.max(MIN, Math.min(A[j].w + dl, Math.max(A[j].w, lim - A[j].x)));
+        }
+        for (const j of op.link.n || []) {
+          const lim = Math.min(Infinity, ...others(j).filter((q) => overlaps(A[j].x, A[j].x + A[j].w, q.x, q.x + q.w) && q.y >= A[j].y + A[j].h - 4).map((q) => q.y - op.G));
+          list[j].h = Math.max(MIN, Math.min(A[j].h + dt, Math.max(A[j].h, lim - A[j].y)));
+        }
       }
     }
     op.guides = guides;

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.21.4
+
+- Fixed: making a card narrower let the joined card beside it widen over a card underneath. A neighbour taking up the freed space now stops at the usual gap from anything in its way.
+- Fixed: making a card taller could push a row of cards below it down by different amounts, leaving the row out of line. Rows now stay level.
+- New animated preview in the README.
+
 ## 0.21.3
 
 - Fixed: making a card shorter pulled the cards joined below it up underneath other cards (e.g. a wide card below two cameras slid under the second camera). Cards moving up now stop at the usual gap below anything in their way, along with whatever is joined below them. The same goes for a column closing up after you drag a card out of it.

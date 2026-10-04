@@ -1,5 +1,7 @@
 <p align="center"><img src="glasshouse/logo.png" alt="Glasshouse" width="250"></p>
 
+<p align="center"><a href="https://github.com/leacho73/glasshouse/releases"><img src="https://img.shields.io/github/v/release/leacho73/glasshouse?include_prereleases&label=beta&color=7aa2ff" alt="Latest beta"></a></p>
+
 <p align="center"><b>A glassy, fast, drag-and-drop dashboard for Home Assistant.</b><br>
 Put any card anywhere, make it any size, style it any way — and run it on a wall tablet, phone or desktop.</p>
 
@@ -103,6 +105,8 @@ Button / tile · Light · Thermostat (draggable dial) · Climate group (several 
 </tr></table>
 
 ## Install
+
+> **Beta:** Glasshouse is in beta until 1.0: used every day, but expect changes. Please report problems and ideas in [Issues](https://github.com/leacho73/glasshouse/issues). Each update has [release notes](https://github.com/leacho73/glasshouse/releases).
 
 1. In Home Assistant go to **Settings → Add-ons → Add-on Store → ⋮ → Repositories** and add  
    `https://github.com/leacho73/glasshouse`

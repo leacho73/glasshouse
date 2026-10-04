@@ -1,5 +1,5 @@
 # Builds the app on every push and pull request. On main, when the add-on's
-# version (glasshouse/config.yaml) is one that hasn't been released yet, tags it
+# version (panalume/config.yaml) is one that hasn't been released yet, tags it
 # and publishes a GitHub release with that version's CHANGELOG section.
 # Home Assistant itself updates from config.yaml; releases are the human record.
 name: Build and release
@@ -21,11 +21,11 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: glasshouse/app/package-lock.json
+          cache-dependency-path: panalume/app/package-lock.json
       - run: npm ci
-        working-directory: glasshouse/app
+        working-directory: panalume/app
       - run: npm run build
-        working-directory: glasshouse/app
+        working-directory: panalume/app
 
   release:
     needs: build
@@ -37,13 +37,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          V=$(sed -n 's/^version: *"\{0,1\}\([^"]*\)"\{0,1\} *$/\1/p' glasshouse/config.yaml)
+          V=$(sed -n 's/^version: *"\{0,1\}\([^"]*\)"\{0,1\} *$/\1/p' panalume/config.yaml)
           if [ -z "$V" ]; then echo "No version found"; exit 1; fi
           if gh release view "v$V" >/dev/null 2>&1; then echo "v$V is already released"; exit 0; fi
           # This version's section of the changelog, without its heading.
-          awk -v v="## $V" '$0 == v { f = 1; next } /^## / && f { exit } f' glasshouse/CHANGELOG.md > notes.md
+          awk -v v="## $V" '$0 == v { f = 1; next } /^## / && f { exit } f' panalume/CHANGELOG.md > notes.md
           if [ ! -s notes.md ]; then echo "- See CHANGELOG.md" > notes.md; fi
-          printf '\n---\nUpdate from **Settings → Add-ons → Glasshouse** in Home Assistant. Full history: [CHANGELOG.md](https://github.com/%s/blob/main/glasshouse/CHANGELOG.md)\n' "$GITHUB_REPOSITORY" >> notes.md
+          printf '\n---\nUpdate from **Settings → Add-ons → Panalume** in Home Assistant. Full history: [CHANGELOG.md](https://github.com/%s/blob/main/panalume/CHANGELOG.md)\n' "$GITHUB_REPOSITORY" >> notes.md
           # Until 1.0, every release is a beta (pre-release).
-          case "$V" in 0.*) PRE=--prerelease; TITLE="Glasshouse $V (beta)" ;; *) PRE=--latest; TITLE="Glasshouse $V" ;; esac
+          case "$V" in 0.*) PRE=--prerelease; TITLE="Panalume $V (beta)" ;; *) PRE=--latest; TITLE="Panalume $V" ;; esac
           gh release create "v$V" --target "$GITHUB_SHA" --title "$TITLE" --notes-file notes.md $PRE

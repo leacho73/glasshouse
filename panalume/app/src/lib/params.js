@@ -1,6 +1,6 @@
 // Address options (?device=, ?fit=, ?kiosk, ?view=, ?noedit). Inside Home Assistant
 // we run in an iframe on HA's own origin, so options added to HA's address bar
-// (…/glasshouse?view=upstairs) are read from the parent page as well as our own.
+// (…/panalume?view=upstairs) are read from the parent page as well as our own.
 function searches() {
   const out = [location.search];
   try {

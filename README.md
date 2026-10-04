@@ -1,19 +1,19 @@
-<p align="center"><img src="glasshouse/logo.png" alt="Glasshouse" width="250"></p>
+<p align="center"><img src="panalume/logo.png" alt="Panalume" width="250"></p>
 
-<p align="center"><a href="https://github.com/leacho73/glasshouse/releases"><img src="https://img.shields.io/github/v/release/leacho73/glasshouse?include_prereleases&label=beta&color=7aa2ff" alt="Latest beta"></a></p>
+<p align="center"><a href="https://github.com/leacho73/panalume/releases"><img src="https://img.shields.io/github/v/release/leacho73/panalume?include_prereleases&label=beta&color=7aa2ff" alt="Latest beta"></a></p>
 
 <p align="center"><b>A glassy, fast, drag-and-drop dashboard for Home Assistant.</b><br>
-Put any card anywhere, make it any size, style it any way — and run it on a wall tablet, phone or desktop.</p>
+Put any card anywhere, make it any size, style it any way — and run it on a wall tablet, phone or desktop.<br><sub>Formerly <i>Glasshouse</i>.</sub></p>
 
-<p align="center"><img src="docs/screenshots/home.webp" alt="Glasshouse on a wall tablet" width="900"></p>
+<p align="center"><img src="docs/screenshots/home.webp" alt="Panalume on a wall tablet" width="900"></p>
 
-<p align="center"><a href="https://youtu.be/WYopi5r8f4s"><img src="docs/screenshots/preview.webp" alt="Glasshouse in action" width="900"></a><br><sub>▶ <a href="https://youtu.be/WYopi5r8f4s">Watch the full 1¾-minute demo on YouTube</a> (recorded before the Solar, Energy flow and Sun cards and the magnet).</sub></p>
+<p align="center"><a href="https://youtu.be/WYopi5r8f4s"><img src="docs/screenshots/preview.webp" alt="Panalume in action" width="900"></a><br><sub>▶ <a href="https://youtu.be/WYopi5r8f4s">Watch the full 1¾-minute demo on YouTube</a> (recorded under its old name, Glasshouse, before the Solar, Energy flow and Sun cards and the magnet).</sub></p>
 
 ---
 
-## Why Glasshouse?
+## Why Panalume?
 
-Glasshouse is a Home Assistant **add-on** that gives you a dashboard you design in the browser — no YAML, no grid. It was inspired by [ha-fusion](https://github.com/matt8707/ha-fusion), and goes further on layout freedom, styling and energy data.
+Panalume is a Home Assistant **add-on** that gives you a dashboard you design in the browser — no YAML, no grid. It was inspired by [ha-fusion](https://github.com/matt8707/ha-fusion), and goes further on layout freedom, styling and energy data.
 
 - **Free layout** — drag cards anywhere and drag any edge or corner to resize. Cards snap to each other's edges and sizes (with guide lines) and to a grid, and a **magnet** keeps cards joined at your usual gap: make one taller and the cards below move down, drop one into a column and it slots in. Hold Shift for pixel precision.
 - **Sidebar** — an optional sidebar that stays put (and keeps its size) while you switch views; cards move freely between sidebar and main area. Turn it off and its cards are kept for later.
@@ -106,12 +106,12 @@ Button / tile · Light · Thermostat (draggable dial) · Climate group (several 
 
 ## Install
 
-> **Beta:** Glasshouse is in beta until 1.0: used every day, but expect changes. Please report problems and ideas in [Issues](https://github.com/leacho73/glasshouse/issues). Each update has [release notes](https://github.com/leacho73/glasshouse/releases).
+> **Beta:** Panalume is in beta until 1.0: used every day, but expect changes. Please report problems and ideas in [Issues](https://github.com/leacho73/panalume/issues). Each update has [release notes](https://github.com/leacho73/panalume/releases).
 
 1. In Home Assistant go to **Settings → Add-ons → Add-on Store → ⋮ → Repositories** and add  
-   `https://github.com/leacho73/glasshouse`
-2. Install **Glasshouse**, start it and turn on **Show in sidebar**.
-3. Open **Glasshouse** from the sidebar and press **E** to start building.
+   `https://github.com/leacho73/panalume`
+2. Install **Panalume**, start it and turn on **Show in sidebar**.
+3. Open **Panalume** from the sidebar and press **E** to start building.
 
 Wall tablet tips: set **Layout → Tablet → Sizing** to *Fit the whole view on screen* and tick *Hide Home Assistant's header bar*. Or add options to the tablet's URL:
 
@@ -124,19 +124,19 @@ Wall tablet tips: set **Layout → Tablet → Sizing** to *Fit the whole view on
 | `?return=5` | Go back to that view after 5 minutes without a touch |
 | `?noedit` | Hide the edit pencil and the E shortcut |
 
-e.g. `…/glasshouse?view=Upstairs&return=5&noedit&fit=screen&kiosk`
+e.g. `…/panalume?view=Upstairs&return=5&noedit&fit=screen&kiosk`
 
 ## Develop
 
 ```sh
-cd glasshouse/app && npm install
+cd panalume/app && npm install
 HA_URL=http://<your-ha>:8123 HA_TOKEN_FILE=<file with a long-lived token> npm run server   # :8099
 npm run dev                                                                                  # Vite on :5173
 ```
 
 ### Adding a card type
 
-Drop a `.svelte` file into `glasshouse/app/src/cards/` that exports a `meta` object from `<script module>`:
+Drop a `.svelte` file into `panalume/app/src/cards/` that exports a `meta` object from `<script module>`:
 
 ```js
 export const meta = {
@@ -148,6 +148,6 @@ export const meta = {
 };
 ```
 
-Use `t()` / `ent()` from `lib/tpl.js` so every setting can be a template. Release by bumping `version` in `glasshouse/config.yaml` and adding a `CHANGELOG.md` entry.
+Use `t()` / `ent()` from `lib/tpl.js` so every setting can be a template. Release by bumping `version` in `panalume/config.yaml` and adding a `CHANGELOG.md` entry.
 
 *Screenshots and the demo video use a demo house with made-up entities.*

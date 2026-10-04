@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import crypto from 'node:crypto';
+import os from 'node:os';
 import { WebSocketServer, WebSocket } from 'ws';
 import * as mdi from '@mdi/js';
 import { fusionDashboard } from './fusion.js';
@@ -236,4 +237,29 @@ if (fs.existsSync(DIST)) {
   }
 }
 
-server.listen(PORT, () => console.log(`Glasshouse on :${PORT} -> ${HA_URL}`));
+// Panalume used to be called Glasshouse. On a fresh install, copy the dashboard
+// from the old add-on if it's installed and running: add-ons reach each other
+// by hostname on Home Assistant's internal network (<repo>-glasshouse).
+async function adoptGlasshouse() {
+  const me = os.hostname();
+  const old = me.replace(/panalume$/, 'glasshouse');
+  if (!SUP || old === me) return;
+  for (let i = 0; i < 20 && !fs.existsSync(CONFIG); i++) {
+    try {
+      const r = await fetch(`http://${old}:8099/api/config`, { signal: AbortSignal.timeout(4000) });
+      const body = await r.text();
+      const cfg = JSON.parse(body);
+      if (cfg?.views && cfg?.cards) {
+        if (fs.existsSync(CONFIG)) return;
+        fs.writeFileSync(CONFIG, body);
+        console.log(`Copied the dashboard from Glasshouse (${old})`);
+        return broadcast({ type: 'config', from: '' });
+      }
+      if (r.ok) return; // Glasshouse is there but has no dashboard
+    } catch {}
+    await new Promise((ok) => setTimeout(ok, 15000));
+  }
+}
+
+server.listen(PORT, () => console.log(`Panalume on :${PORT} -> ${HA_URL}`));
+adoptGlasshouse();

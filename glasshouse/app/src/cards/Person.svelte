@@ -34,7 +34,8 @@
 </div>
 
 <style>
-  .ppl { height: 100%; display: flex; justify-content: space-around; align-items: center; gap: 6px; }
+  /* People line up along the top (avatars level even when a status wraps); the row sits in the middle of the card. */
+  .ppl { height: 100%; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); align-content: center; align-items: start; gap: 6px; }
   .p { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: 0; color: inherit; font: inherit; min-width: 0; flex: 1; }
   .av { width: 48px; height: 48px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: rgba(255,255,255,.1); font-weight: 600; font-size: 1.2em; filter: grayscale(1); opacity: .6; box-shadow: 0 0 0 2px rgba(255,255,255,.1); transition: all .3s; }
   .av.home { filter: none; opacity: 1; box-shadow: 0 0 0 2px #5bd88f; }

@@ -14,6 +14,10 @@
   let vh = $state(innerHeight);
   let scrollY = $state(0);
   let sbEl = $state();
+  // The sidebar's scroll position, kept while a card is being dragged (the
+  // sidebar stops scrolling then so cards can be dragged out of it, and the
+  // content is shifted by this much instead, so nothing jumps).
+  let sbScroll = $state(0);
 
   const L = $derived(layout());
   const sb = $derived(L.sidebar.enabled ? L.sidebar.width : 0);
@@ -55,7 +59,7 @@
   const kx = $derived((split || fill ? mainW / (L.width - sb) : 1) * squeeze);
   const origin = (zone) => ({
     x: zone === 'sidebar' ? (L.sidebar.side === 'right' ? stageW - sb : 0) : L.sidebar.side === 'right' ? 0 : sb,
-    y: zone === 'sidebar' ? scrollY / scale - (sbEl?.scrollTop || 0) : 0,
+    y: zone === 'sidebar' ? scrollY / scale - sbScroll : 0,
   });
   /** Pointer position in a zone's own coordinates. */
   const local = (e, zone) => ({ x: (e.clientX - left) / scale - origin(zone).x, y: (e.clientY + scrollY) / scale - origin(zone).y });
@@ -66,6 +70,9 @@
 
   // Starting to edit puts any cards hanging off the edge back inside for good.
   $effect(() => { if (app.editing) untrack(() => fitOverflow(layout())); });
+
+  // Put the sidebar back where it was once a drag ends.
+  $effect(() => { if (!op && sbEl && Math.abs(sbEl.scrollTop - sbScroll) > 1) sbEl.scrollTop = sbScroll; });
 
   const sel = $derived(app.editing ? new Set(selectionSet()) : new Set());
   const inSel = (zone, i) => app.selected?.zone === zone && sel.has(i);
@@ -319,8 +326,8 @@
 <div class="stage" class:editing={app.editing} class:dragging={!!op} class:right={L.sidebar.side === 'right'}
   style="width:{stageW}px;zoom:{scale};margin-left:{left / scale}px;--grid:{GRID}px">
   {#if sb}
-    <aside class="zone sidebar" bind:this={sbEl} style="width:{sb}px;height:{vh / scale / sideZ}px;zoom:{sideZ}">
-      <div class="inner" role="presentation" style="height:{sideH}px" onpointerdown={(e) => bgDown(e, 'sidebar')} onpointermove={move} onpointerup={end}>{@render zone('sidebar', sideList)}</div>
+    <aside class="zone sidebar" bind:this={sbEl} style="width:{sb}px;height:{vh / scale / sideZ}px;zoom:{sideZ}" onscroll={() => { if (!op) sbScroll = sbEl.scrollTop; }}>
+      <div class="inner" role="presentation" style="height:{sideH}px;--sb-scroll:{sbScroll}" onpointerdown={(e) => bgDown(e, 'sidebar')} onpointermove={move} onpointerup={end}>{@render zone('sidebar', sideList)}</div>
     </aside>
   {/if}
   <main class="zone main" role="presentation" data-size="{L.width}px layout · edge of the canvas" style="width:{mainW}px;height:{mainH}px;zoom:{mainZ};{app.config.views.find((v) => v.id === app.view)?.background ? 'background:' + app.config.views.find((v) => v.id === app.view).background : ''}"
@@ -336,7 +343,8 @@
   .sidebar { position: sticky; top: 0; overflow-y: auto; overflow-x: hidden; background: var(--sidebar-bg); border-right: 1px solid rgba(255,255,255,.05); scrollbar-width: none; }
   .right .sidebar { border-right: 0; border-left: 1px solid rgba(255,255,255,.05); }
   .sidebar .inner { position: relative; }
-  .dragging .sidebar { overflow: visible; z-index: 5; }
+  .dragging .sidebar { overflow-x: visible; overflow-y: clip; z-index: 5; }
+  .dragging .sidebar .inner { transform: translateY(calc(var(--sb-scroll) * -1px)); }
   .editing .zone { background-image: radial-gradient(circle, rgba(255,255,255,.09) 1px, transparent 1.2px); background-size: calc(var(--grid) * 2) calc(var(--grid) * 2); touch-action: none; }
   .editing .sidebar { outline: 1px dashed rgba(122,162,255,.35); outline-offset: -1px; }
   .editing .main { outline: 1px dashed rgba(122,162,255,.35); outline-offset: -1px; }

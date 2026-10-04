@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.20.1
+
+- Fixed: in the editor, pressing on any card made a long, scrolled sidebar jump back to the top until you let go. The sidebar now stays put, and dragging cards in and out of it still works.
+- People card: avatars and names stay level when someone's status wraps onto a second line.
+
 ## 0.20.0
 
 - **Solar card** (Add → Energy): generating now (and % of your system size), today's kWh against the forecast with what's still to come, whether today is above or below forecast, today's curve of actual output over the Solcast forecast and its likely range, where the solar is going (house / battery / export), tomorrow's forecast and, on a tall card, the next five days. Fills itself in for SolarEdge-style sensors and Solcast or Forecast.Solar. Shrinks to a strip.

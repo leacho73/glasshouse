@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.21.3
+
+- Fixed: making a card shorter pulled the cards joined below it up underneath other cards (e.g. a wide card below two cameras slid under the second camera). Cards moving up now stop at the usual gap below anything in their way, along with whatever is joined below them. The same goes for a column closing up after you drag a card out of it.
+
 ## 0.21.2
 
 - Fixed: making a card taller slid it over a card below that wasn't quite at the usual gap. Cards below are now pushed down once the growing edge reaches them (keeping the usual gap), along with whatever is joined below them, and so on down the column.

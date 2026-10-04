@@ -195,6 +195,25 @@
     for (const [j, dy] of shift) list[j].y += dy;
   }
 
+  /** Cards moving up (following a card that got shorter, or closing a gap)
+   *  stop at the usual gap below anything else in their way, and the cards
+   *  joined below them stop with them. `ys` maps index → wanted y. */
+  function liftBlocked(list, orig, ys, fixed, G) {
+    const moving = new Set([...ys.keys(), ...fixed]);
+    for (const j of [...ys.keys()].sort((a, b) => orig[a].y - orig[b].y)) {
+      const o = orig[j];
+      let y = ys.get(j);
+      list.forEach((q, k) => {
+        if (k === j || !overlaps(o.x, o.x + o.w, orig[k].x, orig[k].x + orig[k].w)) return;
+        const gap = o.y - (orig[k].y + orig[k].h);
+        if (gap < -4) return; // not above it
+        if (moving.has(k)) { if (ys.has(k) && joined(gap, G)) y = Math.max(y, list[k].y + list[k].h + gap); }
+        else y = Math.max(y, q.y + q.h + Math.min(G, Math.max(0, gap)));
+      });
+      list[j].y = Math.max(0, y);
+    }
+  }
+
   function nearGap(v, ts) {
     let best = null;
     for (const t of ts) { const d = t - v; if (Math.abs(d) <= GAP_SNAP && (!best || Math.abs(d) < Math.abs(best.d))) best = { d, t }; }
@@ -303,7 +322,8 @@
       for (const [k, js] of Object.entries(op.link)) for (const j of js) Object.assign(list[j], { x: A[j].x, y: A[j].y, w: A[j].w, h: A[j].h });
       if (!free) {
         const db = p.y + p.h - (o.y + o.h), dr = p.x + p.w - (o.x + o.w), dl = p.x - o.x, dt = p.y - o.y;
-        for (const j of op.link.s || []) list[j].y = Math.max(0, A[j].y + db);
+        if (db >= 0) for (const j of op.link.s || []) list[j].y = A[j].y + db;
+        else if (op.link.s?.length) liftBlocked(list, A, new Map(op.link.s.map((j) => [j, A[j].y + db])), [op.index], op.G);
         // A card below that isn't joined gets pushed too once the edge reaches it
         // (keeping the usual gap), with whatever is joined below it.
         for (const j of op.bumped || []) if (!(op.link.s || []).includes(j)) list[j].y = A[j].y;
@@ -377,7 +397,12 @@
     for (const i of idx) { zl[i].w = Math.min(zl[i].w, zw); zl[i].x += shift; }
     if (mode === 'move' && !e.shiftKey) {
       // Magnet: the cards that were joined below close up the space left behind…
-      if (cur.close) for (const r of cur.close.refs) r.y = Math.max(0, r.y - cur.close.dy);
+      if (cur.close) {
+        const src = L.zones[zone];
+        const orig = src.map((q) => ({ x: q.x, y: q.y, w: q.w, h: q.h }));
+        const ys = new Map(cur.close.refs.map((r) => [src.indexOf(r), r.y - cur.close.dy]).filter(([i]) => i >= 0));
+        liftBlocked(src, orig, ys, z === zone ? idx : [], cur.G);
+      }
       // …and dropping onto a column slots the moved cards in, pushing the rest down.
       slotIn(zl, idx.map((i) => zl[i]), z === zone ? cur.G : usualGap(zl));
     }

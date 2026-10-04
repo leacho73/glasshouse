@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.24.1
+
+- **Zappi card: Intelligent Octopus Go's 6 cheap hours.** Tick *Intelligent Octopus Go: track the cheap charging hours* and the card shows how much of the day's cheap charging is left (e.g. "4h 50m cheap charging left · ≈35 kWh at this rate"), with a bar that turns amber once it's used up. It counts only the time the car actually charged, midday to midday as Octopus does, from the Zappi's power history, so it's right even if the dashboard was closed. The number of hours can be changed.
+
 ## 0.24.0
 
 - **Glasshouse is now Panalume.** Same dashboard, new name: another Home Assistant dashboard, GlassHome, has a very similar one. To move across:

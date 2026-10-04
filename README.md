@@ -44,7 +44,7 @@ First-class cards for UK energy setups, with entities **auto-detected** when you
 | **Home battery** | Charge %, kWh left, charge / discharge power, time to full or to reserve, health, today in / out (SolarEdge auto-detected) |
 | **Predbat** | What Predbat is doing, the 24-hour charge / export plan with predicted battery %, costs and savings, Charge / Export / Hold now |
 | **Heat pump** | Live COP / SCOP, power in and heat out, flow and outdoor temperature, hot water with Boost |
-| **Zappi / Eddi** | Status, live power (each device's own reading), session kWh, charge-mode buttons, boosts (myenergi) |
+| **Zappi / Eddi** | Status, live power (each device's own reading), session kWh, charge-mode buttons, boosts, and how much of Intelligent Octopus Go's 6 cheap charging hours are left (myenergi) |
 | **Electric vehicle** | Battery vs target, range, charging, plug / lock / climate (Audi, VW, Renault and similar integrations) |
 
 <p align="center"><img src="docs/screenshots/energy-usage.webp" alt="Energy usage card" width="660"><br><sub><b>Energy usage</b>: where today's energy came from and went, hour by hour, with cost, earnings and the price paid, updating live.</sub></p>

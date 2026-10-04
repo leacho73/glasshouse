@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.19.0
+
+- **Sunrise & sunset card** (Add → Info): today's sun path drawn from your Home Assistant location, where the sun is now, and a countdown to the next sunrise or sunset. Sunrise, solar noon and sunset; on a big card also dawn, dusk and day length with the change since yesterday. Shrinks down to a thin strip or a tiny tile.
+- **People card templates**: the status line and name can be templates, written once for everyone with `entity_id` as each person, e.g. which room they're in from presence sensors.
+- **More info on cards without a single entity** (Zappi / Eddi, energy and appliance cards) now works: it opens the card's main entity, and the Zappi / Eddi card opens its own power reading, i.e. the last 24 hours of charging. The More info and Toggle actions also have an **Entity** picker to open any entity you like.
+
 ## 0.18.1
 
 - Fixed: cards placed past the right-hand edge in an existing layout (e.g. from widening the sidebar before 0.18.0) still hung off the screen. Any view whose cards run past the edge is now squeezed to fit, with equal gaps kept and the right margin matching the left, and opening the editor saves the fitted positions.

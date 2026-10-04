@@ -3,7 +3,11 @@
     type: 'person', name: 'People', icon: 'mdi:account-group', category: 'Info',
     size: { w: 320, h: 110 }, tap: 'none',
     defaults: { entities: [] },
-    fields: [{ key: 'entities', label: 'People', type: 'entities', domain: ['person', 'device_tracker'] }],
+    fields: [
+      { key: 'entities', label: 'People', type: 'entities', domain: ['person', 'device_tracker'] },
+      { key: 'status', label: 'Status line (template; entity_id is each person, blank shows home / away / zone)', type: 'text', placeholder: "{{ states('sensor.' ~ entity_id.split('.')[1] ~ '_travel_time') }} min away" },
+      { key: 'label', label: 'Name (template; entity_id is each person, blank shows their name)', type: 'text' },
+    ],
   };
 </script>
 
@@ -11,6 +15,7 @@
   import { states, haImage } from '../lib/ha.svelte.js';
   import { app } from '../lib/config.svelte.js';
   import { stateText } from '../lib/entity.js';
+  import { t } from '../lib/tpl.js';
   let { props } = $props();
 </script>
 
@@ -22,8 +27,8 @@
       <div class="av" class:home>
         {#if e?.attributes.entity_picture}<img src={haImage(e.attributes.entity_picture)} alt="" />{:else}{(e?.attributes.friendly_name || '?')[0]}{/if}
       </div>
-      <span class="n">{e?.attributes.friendly_name || id}</span>
-      <span class="s">{stateText(e)}</span>
+      <span class="n">{(props.label && t(props.label, { entity_id: id })) || e?.attributes.friendly_name || id}</span>
+      <span class="s">{props.status ? t(props.status, { entity_id: id }) : stateText(e)}</span>
     </button>
   {/each}
 </div>
@@ -35,5 +40,5 @@
   .av.home { filter: none; opacity: 1; box-shadow: 0 0 0 2px #5bd88f; }
   .av img { width: 100%; height: 100%; object-fit: cover; }
   .n { font-size: .85em; font-weight: 600; white-space: nowrap; }
-  .s { font-size: .75em; color: var(--muted); white-space: nowrap; }
+  .s { font-size: .75em; color: var(--muted); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 </style>

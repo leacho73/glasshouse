@@ -3,6 +3,8 @@
   export const meta = {
     type: 'myenergi', name: 'Zappi / Eddi', icon: 'mdi:ev-plug-type2', category: 'Energy',
     size: { w: 400, h: 250 }, tap: 'none',
+    // More info on this card opens the device's own power reading (24 h charging history).
+    infoEntity: (p) => myenergiPower(p.power, p.device === 'eddi' ? 'eddi' : 'zappi', p.mode || p.status),
     defaults: { device: 'zappi', boosts: '5,10,20', eddi_target: 'Heater 1', eddi_minutes: '30,60,120' },
     autofill: () => {
       const z = find(/^select\.myenergi_zappi_.+_charge_mode$/);

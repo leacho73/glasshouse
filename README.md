@@ -78,7 +78,7 @@ Phones get an automatic single-column version of your main layout: navigation ac
 
 ### All the cards
 
-Button / tile · Light · Thermostat (draggable dial) · Hot tub · Washing machine · Tumble dryer · Dishwasher · Media player (artwork, volume, source, speaker grouping) · Cover / blind · Slider · Option picker · Entities list · Glance · Sensor with graph · Gauge · History graph · Weather · Clock · Text / Markdown · Template lines · People · Camera · Web page · Image · Navigation · Divider · Alarm panel · and the energy cards above.
+Button / tile · Light · Thermostat (draggable dial) · Hot tub · Washing machine · Tumble dryer · Dishwasher · Media player (artwork, volume, source, speaker grouping) · Cover / blind · Slider · Option picker · Entities list · Glance · Sensor with graph · Gauge · History graph · Weather · Clock · Sunrise & sunset · Text / Markdown · Template lines · People · Camera · Web page · Image · Navigation · Divider · Alarm panel · and the energy cards above.
 
 ### Coming from ha-fusion?
 

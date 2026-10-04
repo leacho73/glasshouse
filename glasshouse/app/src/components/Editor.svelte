@@ -55,6 +55,7 @@
   const ACTIONS = ['default', 'toggle', 'more-info', 'popup', 'navigate', 'service', 'url', 'none'];
   const actFields = (a) => [
     { key: 'action', label: 'Action', type: 'select', options: ACTIONS },
+    ...(a?.action === 'more-info' || a?.action === 'toggle' ? [{ key: 'entity', label: 'Entity (blank: the card’s own)', type: 'entity' }] : []),
     ...(a?.action === 'popup' ? [{ key: 'title', label: 'Pop-up title', type: 'text' }, { key: 'cards', label: 'Cards in pop-up', type: 'cards' }] : []),
     ...(a?.action === 'navigate' ? [{ key: 'view', label: 'View', type: 'select', options: app.config.views.map((v) => ({ value: v.id, label: v.name })) }] : []),
     ...(a?.action === 'service' ? [{ key: 'service', label: 'Service (domain.service)', type: 'text', placeholder: 'light.turn_on' }, { key: 'data', label: 'Data (JSON, template ok)', type: 'textarea' }] : []),

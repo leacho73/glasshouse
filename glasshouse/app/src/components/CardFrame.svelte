@@ -43,7 +43,14 @@
     const meta = def?.meta || {};
     const act = card[which] || {};
     let kind = act.action || 'default';
-    const entity = t(card.props?.entity);
+    // Cards without a single "entity" (e.g. Zappi, energy cards) use the entity
+    // picked for the action, the card's own choice (meta.infoEntity), or else their first entity setting that's filled in.
+    let entity = t(act.entity) || t(card.props?.entity);
+    if (!entity && kind === 'more-info' && meta.infoEntity) entity = meta.infoEntity(card.props || {});
+    if (!entity && (kind === 'more-info' || kind === 'toggle')) {
+      const f = (meta.fields || []).find((f) => f.type === 'entity' && card.props?.[f.key] && !String(card.props[f.key]).includes('{'));
+      if (f) entity = card.props[f.key];
+    }
     if (kind === 'default') kind = which === 'tap' ? meta.tap || 'more-info' : meta.hold || 'more-info';
     if (kind === 'toggle') {
       const e = ent(entity);

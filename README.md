@@ -36,6 +36,8 @@ First-class cards for UK energy setups, with entities **auto-detected** when you
 | **Intelligent Octopus** | Dispatch status, planned and recent slots, smart / bump charge, ready-by time, charge target |
 | **Energy usage** | Home Assistant's energy graph, live: hourly grid / solar / battery / export bars, today's totals, cost and earnings, price paid per hour, what the house is using now |
 | **Energy cost today** | Cost, kWh, average p/kWh, export, solar, yesterday, peak/off-peak split, half-hourly usage coloured by rate |
+| **Solar** | Generating now, today's curve against the Solcast forecast, above / below forecast, where it's going, tomorrow and the week ahead |
+| **Energy flow** | Self-powered %, solar / battery / house figures and a live flow chart of every route power is taking |
 | **Power flow** | Solar, grid, battery, home and EV with animated flows |
 | **Home battery** | Charge %, kWh left, charge / discharge power, time to full or to reserve, health, today in / out (SolarEdge auto-detected) |
 | **Predbat** | What Predbat is doing, the 24-hour charge / export plan with predicted battery %, costs and savings, Charge / Export / Hold now |
@@ -44,6 +46,11 @@ First-class cards for UK energy setups, with entities **auto-detected** when you
 | **Electric vehicle** | Battery vs target, range, charging, plug / lock / climate (Audi, VW, Renault and similar integrations) |
 
 <p align="center"><img src="docs/screenshots/energy-usage.webp" alt="Energy usage card" width="660"><br><sub><b>Energy usage</b>: where today's energy came from and went, hour by hour, with cost, earnings and the price paid, updating live.</sub></p>
+
+<table><tr>
+<td width="50%"><img src="docs/screenshots/solar.webp" alt="Solar card"><br><sub><b>Solar</b>: generating now, today's output over the Solcast forecast and its likely range, where it's going, tomorrow and the next five days.</sub></td>
+<td width="50%"><img src="docs/screenshots/energy-flow.webp" alt="Energy flow card"><br><sub><b>Energy flow</b>: how self-powered the house is, and a live chart of power from solar, battery and grid to the house, battery and export.</sub></td>
+</tr></table>
 
 <table><tr>
 <td width="50%"><img src="docs/screenshots/predbat.webp" alt="Predbat card"><br><sub><b>Predbat</b>: what it's doing now, the next 24 hours of charge / export slots with predicted battery %, costs, and Charge / Export / Hold buttons.</sub></td>

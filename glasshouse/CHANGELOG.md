@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.20.0
+
+- **Solar card** (Add → Energy): generating now (and % of your system size), today's kWh against the forecast with what's still to come, whether today is above or below forecast, today's curve of actual output over the Solcast forecast and its likely range, where the solar is going (house / battery / export), tomorrow's forecast and, on a tall card, the next five days. Fills itself in for SolarEdge-style sensors and Solcast or Forecast.Solar. Shrinks to a strip.
+- **Energy flow card** (Add → Energy): how self-powered the house is right now, solar / battery / house figures, and a live flow chart from where power comes from (solar, battery, grid) to where it goes (house, battery, export), each band as thick as the power on that route. Uses per-route sensors when your integration has them, otherwise works the routes out from solar, grid and battery power.
+- People card: long statuses (e.g. room names) wrap onto a second line instead of being cut off.
+- Cards can now keep entities they only read indirectly up to date (e.g. Solcast's day-by-day forecasts).
+
 ## 0.19.0
 
 - **Sunrise & sunset card** (Add → Info): today's sun path drawn from your Home Assistant location, where the sun is now, and a countdown to the next sunrise or sunset. Sunrise, solar noon and sunset; on a big card also dawn, dusk and day length with the change since yesterday. Shrinks down to a thin strip or a tiny tile.

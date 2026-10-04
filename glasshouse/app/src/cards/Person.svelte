@@ -40,5 +40,6 @@
   .av.home { filter: none; opacity: 1; box-shadow: 0 0 0 2px #5bd88f; }
   .av img { width: 100%; height: 100%; object-fit: cover; }
   .n { font-size: .85em; font-weight: 600; white-space: nowrap; }
-  .s { font-size: .75em; color: var(--muted); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  /* Long statuses (e.g. room names) wrap onto a second line rather than being cut off. */
+  .s { font-size: .75em; color: var(--muted); text-align: center; line-height: 1.25; max-width: 100%; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
 </style>

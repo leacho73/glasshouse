@@ -10,6 +10,7 @@
   import { setKiosk } from './lib/kiosk.js';
   import { connectLive } from './lib/live.js';
   import { param } from './lib/params.js';
+  import { cards as cardTypes } from './lib/registry.js';
   import { reloadFromServer, startView } from './lib/config.svelte.js';
 
   let vw = $state(innerWidth);
@@ -32,6 +33,8 @@
       else if (v && typeof v === 'object') for (const x of Object.values(v)) walk(x);
     };
     walk(app.config.cards);
+    // Extra entities a card reads without having them as settings (meta.watch).
+    for (const c of Object.values(app.config.cards)) for (const id of cardTypes[c.type]?.meta.watch?.(c.props || {}) || []) ids.add(id);
     // Cards on the myenergi hub's combined charging sensor show the device's own
     // reading instead: look up the Zappi / Eddi sensors once, then watch them.
     if ([...ids].some((id) => HUB_CHARGING.test(id))) {

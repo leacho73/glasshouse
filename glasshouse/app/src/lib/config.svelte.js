@@ -387,40 +387,43 @@ export function removeView(id) {
   changed();
 }
 
-// Changing the design width or the sidebar changes the main area's width. Cards
-// that would spill off the edge (or that filled the old width) are scaled
-// across to fit, so equal gaps stay equal. Scaling is always from where things
-// were when the edit began (until it pauses for 2 s), so typing "350" (via 3 and 35) doesn't drift.
+// Changing the design width or the sidebar changes how wide the main area and
+// the sidebar are. Cards that would spill off the edge (or that filled the old
+// width) are scaled across to fit, so equal gaps stay equal. Scaling is always
+// from where things were when the edit began (until it pauses for 2 s), so
+// typing "350" (via 3 and 35) doesn't drift.
 let fitBase = null, fitTimer;
+const zw = (z, l) => zoneWidth(z === 'sidebar' ? 'sidebar' : 'main', l);
+function refit(list, from, to) {
+  const right = list.reduce((m, p) => Math.max(m, p.x + p.w), 0);
+  const k = right > from ? (right > to ? to / (right + Math.max(0, Math.min(...list.map((p) => p.x)))) : 1)
+    : right > to || right >= from - GRID * 3 ? to / from : 1;
+  return list.map((p) => {
+    const x = Math.round(p.x * k);
+    return { ...p, x, w: Math.max(GRID * 4, Math.round((p.x + p.w) * k) - x) };
+  });
+}
 export function setMainWidth(apply) {
-  clearTimeout(fitTimer);
-  fitTimer = setTimeout(() => (fitBase = null), 2000);
   const l = layout();
-  if (fitBase?.l !== l) fitBase = { l, w: zoneWidth('main', l), zones: $state.snapshot(l.zones) };
+  // Start afresh after a pause, but not while the box is empty or half typed.
+  clearTimeout(fitTimer);
+  const settle = () => (fitTimer = setTimeout(() => (zw('main', l) > 100 && (!l.sidebar.enabled || zw('sidebar', l) > 100) ? (fitBase = null) : settle()), 2000));
+  settle();
+  if (fitBase?.l !== l) fitBase = { l, main: zw('main', l), sidebar: zw('sidebar', l), zones: $state.snapshot(l.zones) };
   apply(l);
-  const w = zoneWidth('main', l);
-  if (w > 100 && fitBase.w > 100) {
-    for (const [z, list] of Object.entries(fitBase.zones)) {
-      if (z === 'sidebar' || !l.zones[z]) continue;
-      const right = list.reduce((m, p) => Math.max(m, p.x + p.w), 0);
-      const k = right > fitBase.w ? (right > w ? w / (right + Math.max(0, Math.min(...list.map((p) => p.x)))) : 1)
-        : right > w || right >= fitBase.w - GRID * 3 ? w / fitBase.w : 1;
-      l.zones[z] = list.map((p) => {
-        const x = Math.round(p.x * k);
-        return { ...p, x, w: Math.max(GRID * 4, Math.round((p.x + p.w) * k) - x) };
-      });
-    }
+  for (const [z, list] of Object.entries(fitBase.zones)) {
+    const from = fitBase[z === 'sidebar' ? 'sidebar' : 'main'], to = zw(z, l);
+    if (l.zones[z] && from > 100 && to > 100) l.zones[z] = refit(list, from, to);
   }
   changed();
 }
 
-/** Scale any view whose cards run past the main area's right edge back inside it. */
+/** Scale any view (or the sidebar) whose cards run past its right edge back inside it. */
 export function fitOverflow(l) {
-  const w = zoneWidth('main', l);
-  if (w < 100) return;
   let any = false;
   for (const [z, list] of Object.entries(l.zones)) {
-    if (z === 'sidebar') continue;
+    const w = zw(z, l);
+    if (w < 100) continue;
     const right = list.reduce((m, p) => Math.max(m, p.x + p.w), 0);
     if (right <= w) continue;
     const k = w / (right + Math.max(0, Math.min(...list.map((p) => p.x)))); // right margin = left margin

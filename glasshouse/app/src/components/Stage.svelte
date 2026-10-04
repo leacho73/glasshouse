@@ -57,6 +57,10 @@
   const mainLeft = $derived((L.zones[app.view] || []).reduce((m, p) => Math.min(m, p.x), Infinity));
   const squeeze = $derived(app.editing || mainRight <= L.width - sb ? 1 : (L.width - sb) / (mainRight + mainLeft));
   const kx = $derived((split || fill ? mainW / (L.width - sb) : 1) * squeeze);
+  // The same for the sidebar (e.g. after it was made narrower).
+  const sideRight = $derived((L.zones.sidebar || []).reduce((m, p) => Math.max(m, p.x + p.w), 0));
+  const sideLeft = $derived((L.zones.sidebar || []).reduce((m, p) => Math.min(m, p.x), Infinity));
+  const ks = $derived(app.editing || !sb || sideRight <= sb ? 1 : sb / (sideRight + sideLeft));
   const origin = (zone) => ({
     x: zone === 'sidebar' ? (L.sidebar.side === 'right' ? stageW - sb : 0) : L.sidebar.side === 'right' ? 0 : sb,
     y: zone === 'sidebar' ? scrollY / scale - sbScroll : 0,
@@ -399,7 +403,7 @@
 {#snippet zone(name, list)}
   {#each list as p, i (p.card + ':' + i)}
     {@const card = app.config.cards[p.card]}
-    {@const k = name === 'sidebar' ? 1 : kx}
+    {@const k = name === 'sidebar' ? ks : kx}
     {@const pw = Math.round(p.w * k)}
     {#if card}
       <div class="place" class:sel={inSel(name, i)} class:primary={isPrimary(name, i) && sel.size === 1} class:grouped={app.editing && p.group}

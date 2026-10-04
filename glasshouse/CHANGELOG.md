@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.21.1
+
+- Fixed: making the sidebar narrower left its cards at their old width, hanging off its edge. Sidebar cards now scale to fit the sidebar's width (as the main area's cards already did), and any that are already too wide are squeezed in on screen and saved when you open the editor.
+- Fixed: clearing the width box and pausing before typing a new number stopped cards being refitted.
+
 ## 0.21.0
 
 - **Magnet for moving and resizing.** Cards sitting at the view's usual gap (worked out from your layout) or touching are joined:

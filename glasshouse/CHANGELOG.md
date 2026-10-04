@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.18.1
+
+- Fixed: cards placed past the right-hand edge in an existing layout (e.g. from widening the sidebar before 0.18.0) still hung off the screen. Any view whose cards run past the edge is now squeezed to fit, with equal gaps kept and the right margin matching the left, and opening the editor saves the fitted positions.
+
 ## 0.18.0
 
 - **Sidebar keeps its size** with *Fit the whole view on screen*: only the main area shrinks to fit, so the sidebar no longer changes size as you switch views. **Layout → Sidebar → When a view shrinks to fit the screen** brings back the old behaviour if you prefer it.

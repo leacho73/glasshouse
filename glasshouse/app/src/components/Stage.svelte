@@ -1,4 +1,5 @@
 <script>
+  import { untrack } from 'svelte';
   import { param } from '../lib/params.js';
   // The dashboard canvas. Laid out at the layout's design width and scaled
   // (CSS zoom) to fit the screen. In edit mode cards can be dragged anywhere
@@ -7,7 +8,7 @@
   // Shift/Ctrl-click or drag a box on empty space to select several.
   // Positions snap to a 10px grid (hold Shift while dragging for 1px).
   import CardFrame from './CardFrame.svelte';
-  import { app, layout, GRID, changed, zoneList, ensureEditable, selectionSet } from '../lib/config.svelte.js';
+  import { app, layout, GRID, changed, zoneList, ensureEditable, selectionSet, fitOverflow } from '../lib/config.svelte.js';
 
   let { available, autoDevice } = $props();
   let vh = $state(innerHeight);
@@ -45,7 +46,13 @@
   const mainW = $derived(split ? (available - sb * sideZ) / mainZ : stageW - sb);
   // ...and widen the main area's cards to use that space, rather than leaving a
   // gap on the right (text keeps its size; cards just get wider).
-  const kx = $derived(split || fill ? mainW / (L.width - sb) : 1);
+  // Cards placed past the main area's edge (e.g. a layout made before the sidebar
+  // got wider) are squeezed to fit rather than hanging off the screen.
+  // The right margin matches the left one.
+  const mainRight = $derived((L.zones[app.view] || []).reduce((m, p) => Math.max(m, p.x + p.w), 0));
+  const mainLeft = $derived((L.zones[app.view] || []).reduce((m, p) => Math.min(m, p.x), Infinity));
+  const squeeze = $derived(app.editing || mainRight <= L.width - sb ? 1 : (L.width - sb) / (mainRight + mainLeft));
+  const kx = $derived((split || fill ? mainW / (L.width - sb) : 1) * squeeze);
   const origin = (zone) => ({
     x: zone === 'sidebar' ? (L.sidebar.side === 'right' ? stageW - sb : 0) : L.sidebar.side === 'right' ? 0 : sb,
     y: zone === 'sidebar' ? scrollY / scale - (sbEl?.scrollTop || 0) : 0,
@@ -56,6 +63,9 @@
   const sideList = $derived(L.zones.sidebar || []);
   const mainH = $derived(Math.max(vh / scale / mainZ, mainList.reduce((m, p) => Math.max(m, p.y + p.h), 0) + (app.editing ? 400 : 20)));
   const sideH = $derived(Math.max(vh / scale / sideZ, sideList.reduce((m, p) => Math.max(m, p.y + p.h), 0) + 20));
+
+  // Starting to edit puts any cards hanging off the edge back inside for good.
+  $effect(() => { if (app.editing) untrack(() => fitOverflow(layout())); });
 
   const sel = $derived(app.editing ? new Set(selectionSet()) : new Set());
   const inSel = (zone, i) => app.selected?.zone === zone && sel.has(i);

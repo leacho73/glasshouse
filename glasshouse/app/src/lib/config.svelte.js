@@ -403,7 +403,8 @@ export function setMainWidth(apply) {
     for (const [z, list] of Object.entries(fitBase.zones)) {
       if (z === 'sidebar' || !l.zones[z]) continue;
       const right = list.reduce((m, p) => Math.max(m, p.x + p.w), 0);
-      const k = right > w || right >= fitBase.w - GRID * 3 ? w / Math.max(right, fitBase.w) : 1;
+      const k = right > fitBase.w ? (right > w ? w / (right + Math.max(0, Math.min(...list.map((p) => p.x)))) : 1)
+        : right > w || right >= fitBase.w - GRID * 3 ? w / fitBase.w : 1;
       l.zones[z] = list.map((p) => {
         const x = Math.round(p.x * k);
         return { ...p, x, w: Math.max(GRID * 4, Math.round((p.x + p.w) * k) - x) };
@@ -411,4 +412,24 @@ export function setMainWidth(apply) {
     }
   }
   changed();
+}
+
+/** Scale any view whose cards run past the main area's right edge back inside it. */
+export function fitOverflow(l) {
+  const w = zoneWidth('main', l);
+  if (w < 100) return;
+  let any = false;
+  for (const [z, list] of Object.entries(l.zones)) {
+    if (z === 'sidebar') continue;
+    const right = list.reduce((m, p) => Math.max(m, p.x + p.w), 0);
+    if (right <= w) continue;
+    const k = w / (right + Math.max(0, Math.min(...list.map((p) => p.x)))); // right margin = left margin
+    for (const p of list) {
+      const x = Math.round(p.x * k);
+      p.w = Math.max(GRID * 4, Math.round((p.x + p.w) * k) - x);
+      p.x = x;
+    }
+    any = true;
+  }
+  if (any) changed();
 }

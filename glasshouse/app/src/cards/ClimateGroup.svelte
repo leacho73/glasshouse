@@ -121,7 +121,6 @@
     return s || n;
   }
 
-  const wide = $derived(w >= 520 && w > h * 1.3);
   // What fits under the header, in order: target, modes, fan, then the units
   // (on short cards the fan and then the modes drop out first).
   const room = $derived(h - 24 - 40);
@@ -129,6 +128,10 @@
   const showModes = $derived(show('modes') && modes.length > 0 && heroH + 44 <= room);
   const showFan = $derived(show('fan') && fans.length > 0 && heroH + (showModes ? 44 : 0) + 42 <= room);
   const used = $derived(heroH + (showModes ? 44 : 0) + (showFan ? 42 : 0));
+  // Side by side only when the unit rows don't fit underneath (spare height
+  // goes first), and the card is wide enough for two columns.
+  const stackFits = $derived(!show('units') || !units.length || used + 10 + units.length * 46 <= room);
+  const wide = $derived(!stackFits && w >= 520 && w > h * 1.1);
   const showUnits = $derived(show('units') && units.length > 0 && (wide ? room : room - used - 10) >= 44);
 </script>
 

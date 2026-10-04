@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.22.1
+
+- Fixed: making a Climate group card a bit shorter switched it to the side-by-side layout while it still had spare space. It now loses the spare space first and only goes side by side once the unit rows no longer fit underneath.
+
 ## 0.22.0
 
 - **Climate group card.** Several thermostats or AC units on one card, e.g. upstairs and downstairs air conditioning. One − / + changes them all (targets that differ meet in the middle first), mode buttons set them all (Off turns them all off), and a fan speed picker sets every unit that's on. The header shows what they're doing, the average temperature and how many are on. Below, each unit has its own row: power button, what it's doing, and its own − / +; tap its name for the more-info pop-up. Smaller cards drop the unit rows, then the fan picker, then the modes. Your climate entities are filled in when you add it.

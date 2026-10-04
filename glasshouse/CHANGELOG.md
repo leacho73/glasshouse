@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.23.1
+
+- Sun card: the moon's path is now a clear line only while the sun is down, and a faint dotted one in daylight, so it no longer looks as if the moon was bright in the sky at lunchtime. The dimmed moon below the horizon is no longer drawn on top of the setting sun.
+
 ## 0.23.0
 
 - **3D printer card.** A progress ring around a picture of the model, what it's printing, time left and finish time, layers, nozzle / bed / chamber temperatures, the filament in use and its colour, Pause / Resume, Stop (asks first), the chamber light and print speed. Bambu Lab printers fill in automatically (the online one is picked); OctoPrint gets the basics. Wide, tall and single-row layouts.

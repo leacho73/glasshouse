@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.22.0
+
+- **Climate group card.** Several thermostats or AC units on one card, e.g. upstairs and downstairs air conditioning. One − / + changes them all (targets that differ meet in the middle first), mode buttons set them all (Off turns them all off), and a fan speed picker sets every unit that's on. The header shows what they're doing, the average temperature and how many are on. Below, each unit has its own row: power button, what it's doing, and its own − / +; tap its name for the more-info pop-up. Smaller cards drop the unit rows, then the fan picker, then the modes. Your climate entities are filled in when you add it.
+- Fixed: the Text / Markdown card showed a scrollbar when a heading only just filled the card. Text is now centred top to bottom; text that's genuinely too long scrolls without a scrollbar.
+
 ## 0.21.4
 
 - Fixed: making a card narrower let the joined card beside it widen over a card underneath. A neighbour taking up the freed space now stops at the usual gap from anything in its way.

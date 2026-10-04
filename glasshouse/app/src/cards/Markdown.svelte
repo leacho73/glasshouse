@@ -34,12 +34,28 @@
   }
   // Template output is escaped before markdown formatting, so it can't inject HTML.
   const html = $derived(md(t(props.content)));
+  // Centred in the card; only text that's genuinely too long (not just a few
+  // pixels of line height) scrolls, from the top and without a scrollbar.
+  let el = $state(), long = $state(false);
+  $effect(() => {
+    if (!el) return;
+    html;
+    const check = () => (long = el.scrollHeight > el.clientHeight + 10);
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    check();
+    return () => ro.disconnect();
+  });
 </script>
 
-<div class="md">{@html html}</div>
+<div class="md" class:long bind:this={el}>{@html html}</div>
 
 <style>
-  .md { height: 100%; overflow: auto; line-height: 1.45; }
+  .md { height: 100%; display: flex; flex-direction: column; justify-content: center; line-height: 1.45; }
+  .md.long { justify-content: flex-start; overflow-y: auto; scrollbar-width: none; }
+  .md::-webkit-scrollbar { display: none; }
+  .md > :global(:last-child) { margin-bottom: 0; }
+  .md :global(:is(h1, h2, h3, h4)) { line-height: 1.2; }
   .md :global(h1) { font-size: 1.6em; margin: 0 0 .3em; font-weight: 600; }
   .md :global(h2) { font-size: 1.3em; margin: 0 0 .3em; font-weight: 600; }
   .md :global(h3), .md :global(h4) { font-size: 1.05em; margin: 0 0 .3em; }

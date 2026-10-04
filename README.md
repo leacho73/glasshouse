@@ -70,6 +70,8 @@ Built for the [Octopus Energy](https://github.com/BottlecapDave/HomeAssistant-Oc
 
 Detects Samsung SmartThings washers, Home Connect (Bosch / Neff / Siemens) dishwashers, hOn (Haier / Candy / Hoover) dryers and Gecko (in.touch2) hot tubs; any other appliance can be set up by picking its entities.
 
+<p align="center"><img src="docs/screenshots/climate-group.webp" alt="Climate group card" width="440"><br><sub><b>Climate group</b>: upstairs and downstairs AC (or any thermostats) from one card: one target, mode and fan speed for all of them, and a row per unit to switch it or adjust it on its own.</sub></p>
+
 ## Edit in the browser
 
 <p align="center"><img src="docs/screenshots/edit.webp" alt="Editing a card" width="900"></p>
@@ -86,7 +88,7 @@ Phones get an automatic single-column version of your main layout: navigation ac
 
 ### All the cards
 
-Button / tile · Light · Thermostat (draggable dial) · Hot tub · Washing machine · Tumble dryer · Dishwasher · Media player (artwork, volume, source, speaker grouping) · Cover / blind · Slider · Option picker · Entities list · Glance · Sensor with graph · Gauge · History graph · Weather · Clock · Sunrise & sunset · Text / Markdown · Template lines · People · Camera · Web page · Image · Navigation · Divider · Alarm panel · and the energy cards above.
+Button / tile · Light · Thermostat (draggable dial) · Climate group (several thermostats / AC units at once) · Hot tub · Washing machine · Tumble dryer · Dishwasher · Media player (artwork, volume, source, speaker grouping) · Cover / blind · Slider · Option picker · Entities list · Glance · Sensor with graph · Gauge · History graph · Weather · Clock · Sunrise & sunset · Text / Markdown · Template lines · People · Camera · Web page · Image · Navigation · Divider · Alarm panel · and the energy cards above.
 
 ### Coming from ha-fusion?
 

@@ -85,23 +85,9 @@
     const path = today.pts.map(([x, e], i) => `${i ? 'L' : 'M'}${X(x).toFixed(1)},${Y(e).toFixed(1)}`).join('');
     const nowE = today.pts.reduce((b, p) => (Math.abs(p[0] - now) < Math.abs(b[0] - now) ? p : b))[1];
     const near = (pts) => pts.reduce((b, p) => (Math.abs(p[0] - now) < Math.abs(b[0] - now) ? p : b))[1];
-    // The moon's path, split into night (sun down: easy to see) and day (a pale
-    // daytime moon), so it doesn't look as if it was bright in the sky at lunchtime.
-    const seg = (night) => {
-      if (!moon) return '';
-      let d = '', open = false;
-      for (let i = 1; i < moon.pts.length; i++) {
-        if (((today.pts[i]?.[1] ?? 0) < -0.833) !== night) { open = false; continue; }
-        const [x0, e0] = moon.pts[i - 1], [x1, e1] = moon.pts[i];
-        if (!open) d += `M${X(x0).toFixed(1)},${Y(e0).toFixed(1)}`;
-        d += `L${X(x1).toFixed(1)},${Y(e1).toFixed(1)}`;
-        open = true;
-      }
-      return d;
-    };
-    const mnight = seg(true), mday = seg(false);
+    const mpath = moon ? moon.pts.map(([x, e], i) => `${i ? 'L' : 'M'}${X(x).toFixed(1)},${Y(e).toFixed(1)}`).join('') : null;
     return { hy, path, area: `${path}L${X(today.end)},${hy}L${X(today.start)},${hy}Z`, sx: X(now), sy: Y(nowE), rx: today.rise && X(today.rise), setx: today.set && X(today.set),
-      mnight, mday, my: moon ? Y(near(moon.pts)) : null };
+      mpath, my: moon ? Y(near(moon.pts)) : null };
   });
   const uid = Math.random().toString(36).slice(2, 8);
   // The lit part of the moon as a path: the bright limb, then the terminator
@@ -141,8 +127,7 @@
           <line x1="0" x2={cw} y1={chart.hy} y2={chart.hy} stroke="var(--muted)" stroke-opacity=".35" />
           {#if chart.rx}<circle cx={chart.rx} cy={chart.hy} r="2.5" fill="var(--sun)" />{/if}
           {#if chart.setx}<circle cx={chart.setx} cy={chart.hy} r="2.5" fill="var(--sun)" />{/if}
-          {#if chart.mday}<path d={chart.mday} fill="none" stroke="var(--moon)" stroke-opacity=".18" stroke-width="1" stroke-dasharray="2 4" clip-path="url(#above-{uid})" />{/if}
-          {#if chart.mnight}<path d={chart.mnight} fill="none" stroke="var(--moon)" stroke-opacity=".6" stroke-width="1.4" clip-path="url(#above-{uid})" />{/if}
+          {#if chart.mpath}<path d={chart.mpath} fill="none" stroke="var(--moon)" stroke-opacity=".45" stroke-width="1.25" clip-path="url(#above-{uid})" />{/if}
           <!-- The moon's disc, unless it's below the horizon right where the sun is. -->
           {#if phase && chart.my != null && (moonUp || Math.abs(chart.my - chart.sy) > (strip ? 14 : 20))}
             {@const r = strip ? 5 : 7}

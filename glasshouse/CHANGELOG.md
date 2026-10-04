@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.23.2
+
+- Sun card: the moon's path is back to a single line all day (the faint daytime style in 0.23.1 is gone). The set moon is still no longer drawn on top of the setting sun.
+
 ## 0.23.1
 
 - Sun card: the moon's path is now a clear line only while the sun is down, and a faint dotted one in daylight, so it no longer looks as if the moon was bright in the sky at lunchtime. The dimmed moon below the horizon is no longer drawn on top of the setting sun.

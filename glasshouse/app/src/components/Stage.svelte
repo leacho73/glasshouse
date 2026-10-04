@@ -304,6 +304,29 @@
       if (!free) {
         const db = p.y + p.h - (o.y + o.h), dr = p.x + p.w - (o.x + o.w), dl = p.x - o.x, dt = p.y - o.y;
         for (const j of op.link.s || []) list[j].y = Math.max(0, A[j].y + db);
+        // A card below that isn't joined gets pushed too once the edge reaches it
+        // (keeping the usual gap), with whatever is joined below it.
+        for (const j of op.bumped || []) if (!(op.link.s || []).includes(j)) list[j].y = A[j].y;
+        op.bumped = [];
+        if (d.includes('s') && db > 0) {
+          // Everything that moved down (this card, cards joined below it, cards
+          // pushed already) can push the next card it reaches, and so on.
+          const moved = new Set([op.index, ...(op.link.s || [])]);
+          for (let pass = 0, more = true; more && pass < 12; pass++) {
+            more = false;
+            for (const m of [...moved]) {
+              const c = list[m], bottom = c.y + c.h;
+              if (bottom <= A[m].y + A[m].h) continue;
+              A.forEach((q, j) => {
+                if (moved.has(j) || !overlaps(c.x, c.x + c.w, q.x, q.x + q.w)) return;
+                if (q.y < A[m].y + A[m].h - 4 || list[j].y >= bottom + op.G) return; // above it, or not reached yet
+                const dy = bottom + op.G - list[j].y;
+                for (const k of [j, ...links(A, j, 's', op.G)]) if (!moved.has(k)) { list[k].y += dy; moved.add(k); op.bumped.push(k); }
+                more = true;
+              });
+            }
+          }
+        }
         for (const j of op.link.e || []) { const w = Math.max(MIN, A[j].w - dr); list[j].x = A[j].x + A[j].w - w; list[j].w = w; }
         for (const j of op.link.w || []) list[j].w = Math.max(MIN, A[j].w + dl);
         for (const j of op.link.n || []) list[j].h = Math.max(MIN, A[j].h + dt);

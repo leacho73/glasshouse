@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.21.2
+
+- Fixed: making a card taller slid it over a card below that wasn't quite at the usual gap. Cards below are now pushed down once the growing edge reaches them (keeping the usual gap), along with whatever is joined below them, and so on down the column.
+
 ## 0.21.1
 
 - Fixed: making the sidebar narrower left its cards at their old width, hanging off its edge. Sidebar cards now scale to fit the sidebar's width (as the main area's cards already did), and any that are already too wide are squeezed in on screen and saved when you open the editor.

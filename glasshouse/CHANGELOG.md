@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.21.0
+
+- **Magnet for moving and resizing.** Cards sitting at the view's usual gap (worked out from your layout) or touching are joined:
+  - Make a card taller or shorter and the cards joined below it move with it.
+  - Drag a card's side edge and the joined card beside it narrows or widens to keep the row filled. Drag its top edge and the joined card above gives or takes the space.
+  - Drop a card between two others in a column and it slots in at the usual gap, pushing the rest down. Drag one out of a column and the gap closes up.
+  - Move or resize a card to within 5 px of the usual gap from another and it snaps to exactly that gap. A card further away stays independent.
+  - Hold Shift to do any of this freely, without the magnet.
+
 ## 0.20.2
 
 - Fixed: the Energy flow card cut small flows (e.g. 45 W of export next to 2 kW of solar) off the bottom of the chart. Every flow now gets a visible band and a bar tall enough for its label, and labels never overlap or run off the edge.

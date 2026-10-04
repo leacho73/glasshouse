@@ -111,6 +111,92 @@
     return m && { v: m.t, cards: ts.filter((x) => x[0] === m.t).map((x) => x[1]) };
   }
 
+  // Magnet: the view's usual gap between cards (the commonest one), and which
+  // cards are joined — sitting at that gap or touching. Resizing a card carries
+  // joined cards with it; a card dragged further away stays on its own, and one
+  // brought back within 5 px of the gap snaps to it and joins up again.
+  const LINK = 4, GAP_SNAP = 5;
+  const overlaps = (a0, a1, b0, b1) => Math.min(a1, b1) - Math.max(a0, b0) > 4;
+  function usualGap(list) {
+    const n = new Map();
+    for (const a of list) for (const b of list) {
+      if (a === b) continue;
+      const gx = b.x - (a.x + a.w), gy = b.y - (a.y + a.h);
+      if (gx >= 4 && gx <= 48 && overlaps(a.y, a.y + a.h, b.y, b.y + b.h)) n.set(Math.round(gx), (n.get(Math.round(gx)) || 0) + 1);
+      if (gy >= 4 && gy <= 48 && overlaps(a.x, a.x + a.w, b.x, b.x + b.w)) n.set(Math.round(gy), (n.get(Math.round(gy)) || 0) + 1);
+    }
+    let best = 20, c = 0;
+    for (const [g, k] of n) if (k > c || (k === c && g < best)) { best = g; c = k; }
+    return best;
+  }
+  const joined = (gap, G) => Math.abs(gap - G) <= LINK || (gap >= 0 && gap <= LINK);
+  /** Cards joined to card i on side d ('s' below, 'n' above, 'e' right, 'w' left); below cascades. */
+  function links(list, i, d, G) {
+    const out = new Set();
+    const q = [i];
+    while (q.length) {
+      const a = list[q.shift()];
+      list.forEach((b, j) => {
+        if (j === i || out.has(j)) return;
+        const ok =
+          d === 's' ? overlaps(a.x, a.x + a.w, b.x, b.x + b.w) && joined(b.y - (a.y + a.h), G)
+          : d === 'n' ? overlaps(a.x, a.x + a.w, b.x, b.x + b.w) && joined(a.y - (b.y + b.h), G)
+          : d === 'e' ? overlaps(a.y, a.y + a.h, b.y, b.y + b.h) && joined(b.x - (a.x + a.w), G)
+          : overlaps(a.y, a.y + a.h, b.y, b.y + b.h) && joined(a.x - (b.x + b.w), G);
+        if (ok) { out.add(j); if (d === 's') q.push(j); }
+      });
+    }
+    return [...out];
+  }
+  /** Snap targets for edges, plus "one usual gap away" from each other card. */
+  function gapTargets(list, skip, G) {
+    const g = { l: [], r: [], t: [], b: [] }; // where a left / right / top / bottom edge would sit one gap from a card
+    list.forEach((p, i) => {
+      if (skip.includes(i)) return;
+      g.l.push(p.x + p.w + G); g.r.push(p.x - G); g.t.push(p.y + p.h + G); g.b.push(p.y - G);
+    });
+    return g;
+  }
+  /** Fit the moved cards into the column they were dropped on: below any card
+   *  whose middle they're past, and push cards underneath (with whatever is
+   *  joined below them) down to make room, at the usual gap. */
+  function slotIn(list, moving, G) {
+    const mv = new Set(moving);
+    const box = () => { const x0 = Math.min(...moving.map((p) => p.x)), x1 = Math.max(...moving.map((p) => p.x + p.w)); const y0 = Math.min(...moving.map((p) => p.y)), y1 = Math.max(...moving.map((p) => p.y + p.h)); return { x0, x1, y0, y1 }; };
+    const others = () => list.filter((p) => !mv.has(p));
+    let b = box();
+    const hit = (p) => overlaps(b.x0, b.x1, p.x, p.x + p.w) && p.y < b.y1 && p.y + p.h > b.y0;
+    // Go below cards the drop is mostly past.
+    for (let n = 0; n < 8; n++) {
+      const above = others().filter((p) => hit(p) && b.y0 >= p.y + p.h / 2);
+      if (!above.length) break;
+      const dy = Math.max(...above.map((p) => p.y + p.h)) + G - b.y0;
+      for (const p of moving) p.y += dy;
+      b = box();
+    }
+    // Push down what's in the way, keeping their own columns together.
+    const blocked = others().filter((p) => overlaps(b.x0, b.x1, p.x, p.x + p.w) && p.y < b.y1 + G && p.y + p.h > b.y0);
+    if (!blocked.length) return;
+    // Dropped between two joined cards: sit at the usual gap under the upper one.
+    const top = Math.min(...blocked.map((p) => p.y));
+    const up = others().filter((p) => overlaps(b.x0, b.x1, p.x, p.x + p.w) && p.y + p.h <= b.y0 + 1).sort((p, q) => q.y + q.h - (p.y + p.h))[0];
+    if (up && joined(top - (up.y + up.h), G)) { const dy = up.y + up.h + G - b.y0; for (const p of moving) p.y += dy; b = box(); }
+    const snapshot = list.map((p) => ({ x: p.x, y: p.y, w: p.w, h: p.h }));
+    const shift = new Map();
+    for (const p of blocked) {
+      const dy = b.y1 + G - p.y;
+      const i = list.indexOf(p);
+      for (const j of [i, ...links(snapshot, i, 's', G)]) if (!mv.has(list[j])) shift.set(j, Math.max(shift.get(j) || 0, dy));
+    }
+    for (const [j, dy] of shift) list[j].y += dy;
+  }
+
+  function nearGap(v, ts) {
+    let best = null;
+    for (const t of ts) { const d = t - v; if (Math.abs(d) <= GAP_SNAP && (!best || Math.abs(d) < Math.abs(best.d))) best = { d, t }; }
+    return best;
+  }
+
   function begin(e, zone, index, mode, dir) {
     if (!app.editing || e.button > 0) return;
     e.stopPropagation();
@@ -142,7 +228,15 @@
     if (!keep || mode === 'resize') app.selected = { zone, index };
     app.panel = 'card';
     const idx = mode === 'move' ? selectionSet() : [index];
-    op = { zone, index, mode, dir, sx: e.clientX, sy: e.clientY, idx, o: idx.map((i) => ({ ...list[i] })), moved: false, t: targets(zone, idx), guides: [], same: [] };
+    const G = usualGap(list);
+    const all = list.map((p) => ({ ...p }));
+    const link = mode === 'resize' ? Object.fromEntries([...(dir || '')].map((d) => [d, links(all, index, d, G)])) : {};
+    const skip = [...idx, ...Object.values(link).flat()];
+    // Moving: the cards joined below the moving ones close up behind it on drop.
+    const below = mode === 'move' ? [...new Set(idx.flatMap((i) => links(all, i, 's', G)))].filter((j) => !idx.includes(j)) : [];
+    const span = mode === 'move' ? Math.max(...idx.map((i) => all[i].y + all[i].h)) - Math.min(...idx.map((i) => all[i].y)) : 0;
+    const close = below.length ? { refs: below.map((j) => list[j]), dy: span + G } : null;
+    op = { zone, index, mode, dir, sx: e.clientX, sy: e.clientY, idx, o: idx.map((i) => ({ ...list[i] })), all, G, link, close, moved: false, t: targets(zone, skip), gt: gapTargets(list, skip, G), guides: [], same: [] };
     e.currentTarget?.setPointerCapture(e.pointerId);
   }
 
@@ -171,8 +265,10 @@
       const o0 = op.o[0];
       const bx = Math.min(...op.o.map((o) => o.x)), by = Math.min(...op.o.map((o) => o.y));
       const bw = Math.max(...op.o.map((o) => o.x + o.w)) - bx, bh = Math.max(...op.o.map((o) => o.y + o.h)) - by;
-      const mx = !free && near([bx + dx, bx + bw + dx], op.t.xs);
-      const my = !free && near([by + dy, by + bh + dy], op.t.ys);
+      const gx = (a, b) => { const l = nearGap(bx + dx, op.gt.l), r = nearGap(bx + bw + dx, op.gt.r); const m = [l, r].filter(Boolean).sort((p, q) => Math.abs(p.d) - Math.abs(q.d))[0]; return m && { d: m.d, t: m === l ? bx + dx + m.d : bx + bw + dx + m.d }; };
+      const gy = () => { const t = nearGap(by + dy, op.gt.t), b = nearGap(by + bh + dy, op.gt.b); const m = [t, b].filter(Boolean).sort((p, q) => Math.abs(p.d) - Math.abs(q.d))[0]; return m && { d: m.d, t: m === t ? by + dy + m.d : by + bh + dy + m.d }; };
+      const mx = !free && (near([bx + dx, bx + bw + dx], op.t.xs) || gx());
+      const my = !free && (near([by + dy, by + bh + dy], op.t.ys) || gy());
       const sx = mx ? Math.round(dx + mx.d) : snap(o0.x + dx, free) - o0.x;
       const sy = Math.max(-by, my ? Math.round(dy + my.d) : snap(o0.y + dy, free) - o0.y);
       if (mx) guides.push({ x: mx.t });
@@ -187,10 +283,27 @@
       // card of the same width / height; failing that, the grid.
       const edge = (v, ts, g) => { const m = !free && near([v], ts); if (m) guides.push({ [g]: m.t }); return m ? m.t : null; };
       const size = (v, ts) => { const m = !free && sameSize(v, ts); if (m) same.push(...m.cards); return m ? m.v : null; };
-      if (d.includes('e')) { const r = edge(o.x + o.w + dx, op.t.xs, 'x'); p.w = Math.max(MIN, r != null ? r - o.x : size(o.w + dx, op.t.ws) ?? snap(o.w + dx, free)); }
-      if (d.includes('s')) { const b = edge(o.y + o.h + dy, op.t.ys, 'y'); p.h = Math.max(MIN, b != null ? b - o.y : size(o.h + dy, op.t.hs) ?? snap(o.h + dy, free)); }
-      if (d.includes('w')) { const l = edge(o.x + dx, op.t.xs, 'x'); const nx = Math.min(o.x + o.w - MIN, l ?? snap(o.x + dx, free)); p.w = o.w + (o.x - nx); p.x = nx; }
-      if (d.includes('n')) { const t = edge(o.y + dy, op.t.ys, 'y'); const ny = Math.max(0, Math.min(o.y + o.h - MIN, t ?? snap(o.y + dy, free))); p.h = o.h + (o.y - ny); p.y = ny; }
+      // ...or sits one usual gap from a card it isn't joined to (magnet).
+      const gap = (v, ts, g) => { const m = !free && nearGap(v, ts); if (m) guides.push({ [g]: m.t }); return m ? m.t : null; };
+      // Don't squeeze a joined neighbour below the minimum size.
+      const room = (k, key) => Math.min(Infinity, ...(free ? [] : (op.link[k] || []).map((j) => op.all[j][key] - MIN)));
+      dx = d.includes('e') ? Math.min(dx, room('e', 'w')) : d.includes('w') ? Math.max(dx, -room('w', 'w')) : dx;
+      dy = d.includes('n') ? Math.max(dy, -room('n', 'h')) : dy;
+      if (d.includes('e')) { const r = edge(o.x + o.w + dx, op.t.xs, 'x') ?? gap(o.x + o.w + dx, op.gt.r, 'x'); p.w = Math.max(MIN, r != null ? r - o.x : size(o.w + dx, op.t.ws) ?? snap(o.w + dx, free)); }
+      if (d.includes('s')) { const b = edge(o.y + o.h + dy, op.t.ys, 'y') ?? gap(o.y + o.h + dy, op.gt.b, 'y'); p.h = Math.max(MIN, b != null ? b - o.y : size(o.h + dy, op.t.hs) ?? snap(o.h + dy, free)); }
+      if (d.includes('w')) { const l = edge(o.x + dx, op.t.xs, 'x') ?? gap(o.x + dx, op.gt.l, 'x'); const nx = Math.min(o.x + o.w - MIN, l ?? snap(o.x + dx, free)); p.w = o.w + (o.x - nx); p.x = nx; }
+      if (d.includes('n')) { const t = edge(o.y + dy, op.t.ys, 'y') ?? gap(o.y + dy, op.gt.t, 'y'); const ny = Math.max(0, Math.min(o.y + o.h - MIN, t ?? snap(o.y + dy, free))); p.h = o.h + (o.y - ny); p.y = ny; }
+      // Joined cards follow (not with Shift): those below move with the bottom
+      // edge; the neighbour on the other sides gives or takes the space.
+      const A = op.all;
+      for (const [k, js] of Object.entries(op.link)) for (const j of js) Object.assign(list[j], { x: A[j].x, y: A[j].y, w: A[j].w, h: A[j].h });
+      if (!free) {
+        const db = p.y + p.h - (o.y + o.h), dr = p.x + p.w - (o.x + o.w), dl = p.x - o.x, dt = p.y - o.y;
+        for (const j of op.link.s || []) list[j].y = Math.max(0, A[j].y + db);
+        for (const j of op.link.e || []) { const w = Math.max(MIN, A[j].w - dr); list[j].x = A[j].x + A[j].w - w; list[j].w = w; }
+        for (const j of op.link.w || []) list[j].w = Math.max(MIN, A[j].w + dl);
+        for (const j of op.link.n || []) list[j].h = Math.max(MIN, A[j].h + dt);
+      }
     }
     op.guides = guides;
     op.same = same;
@@ -235,6 +348,12 @@
     const maxX = Math.max(...idx.map((i) => zl[i].x + zl[i].w));
     const shift = minX < 0 ? -minX : maxX > zw ? Math.max(-minX, zw - maxX) : 0;
     for (const i of idx) { zl[i].w = Math.min(zl[i].w, zw); zl[i].x += shift; }
+    if (mode === 'move' && !e.shiftKey) {
+      // Magnet: the cards that were joined below close up the space left behind…
+      if (cur.close) for (const r of cur.close.refs) r.y = Math.max(0, r.y - cur.close.dy);
+      // …and dropping onto a column slots the moved cards in, pushing the rest down.
+      slotIn(zl, idx.map((i) => zl[i]), z === zone ? cur.G : usualGap(zl));
+    }
     changed();
   }
 

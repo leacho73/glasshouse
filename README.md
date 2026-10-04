@@ -7,7 +7,7 @@ Put any card anywhere, make it any size, style it any way — and run it on a wa
 
 <p align="center"><img src="docs/screenshots/home.webp" alt="Panalume on a wall tablet" width="900"></p>
 
-<p align="center"><a href="https://youtu.be/WYopi5r8f4s"><img src="docs/screenshots/preview.webp" alt="Panalume in action" width="900"></a><br><sub>▶ <a href="https://youtu.be/WYopi5r8f4s">Watch the full 1¾-minute demo on YouTube</a> (recorded under its old name, Glasshouse, before the Solar, Energy flow and Sun cards and the magnet).</sub></p>
+<p align="center"><a href="https://youtu.be/hPoqwze7i7k"><img src="docs/screenshots/preview.webp" alt="Panalume in action" width="900"></a><br><sub>▶ <a href="https://youtu.be/hPoqwze7i7k">Watch the 1½-minute demo on YouTube</a>: the wall tablet, energy, solar, sun and moon, around the house, editing in the browser and the phone layout.</sub></p>
 
 ---
 

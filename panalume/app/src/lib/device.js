@@ -24,7 +24,7 @@ function commonPrefix(objs) {
 }
 
 // Longest shared start of the friendly names, cut at a word: "Workshop P1S".
-function nameOf(ids) {
+export function nameOf(ids) {
   const ns = ids.map((id) => states.get(id)?.attributes.friendly_name).filter(Boolean);
   if (!ns.length) return '';
   let p = ns[0];

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.26.0
+
+- **Electric vehicle card: Renault, Dacia and Alpine cars.** Cars from the Renault integration now fill in properly: battery, range, charge state in plain English ("Not charging", "Waiting for its charging schedule"), time left, target, plug and mileage. The Climate chip presses the car's *Start air conditioner* button and shows when the air conditioning is running.
+- **Pick the car.** A new EV card fills in a car that isn't on another EV card yet, and the **Device** box at the top of its settings switches between all your cars, whatever the make, filling in every entity at once. A name you typed yourself is kept.
+- **EV card shrinks properly.** The percentage scales with the ring so it never overlaps it. Short cards show the time left first and drop the mileage and then the status line, and keep one row of chips, leaving out any that don't fit rather than cutting them in half.
+
 ## 0.25.2
 
 - **Space evenly works with mixed shapes and sizes.** Cards stacked on top of each other (e.g. two cards in a column next to tall thermostats) are spaced as one column and stay together; for **↕**, cards side by side are spaced as one row. Before, ↕ on a row of cards turned it into a staircase.

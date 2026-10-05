@@ -276,7 +276,7 @@ function placeEverywhere(cardId, zone, size) {
 
 export function addCard(type, meta, zone = app.view) {
   const id = uid();
-  app.config.cards[id] = normalise({ id, type, props: { ...structuredClone(meta.defaults || {}), ...(meta.autofill?.() || {}) } });
+  app.config.cards[id] = normalise({ id, type, props: { ...structuredClone(meta.defaults || {}), ...(meta.autofill?.({ cards: app.config.cards }) || {}) } });
   placeEverywhere(id, zone, { w: meta.size?.w || 200, h: meta.size?.h || 120 });
   app.panel = 'card';
   changed();

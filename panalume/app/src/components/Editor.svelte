@@ -268,8 +268,17 @@
               {/each}
             </div>
           {/if}
-          {@const dev = devices(card.props, def?.meta.fields || [])}
-          {#if dev}
+          {@const own = def?.meta.devices?.(card.props)}
+          {@const dev = own ? null : devices(card.props, def?.meta.fields || [])}
+          {#if own}
+            <!-- The card knows its own devices (e.g. cars of different makes): switching refills it. -->
+            <label class="devsw"><span>Device</span>
+              <select value="" onchange={(ev) => { const o = own.others.find((x) => x.id === ev.currentTarget.value); ev.currentTarget.value = ''; if (!o) return; const keepName = card.props.name && card.props.name !== own.current; for (const f of def.meta.fields) if (f.type === 'entity') card.props[f.key] = ''; Object.assign(card.props, o.props, keepName ? { name: card.props.name } : {}); changed(); toast(`Switched to ${o.name}`); }}>
+                <option value="">{own.current || 'Pick one…'}</option>
+                {#each own.others as o (o.id)}<option value={o.id}>Switch to {o.name}</option>{/each}
+              </select>
+            </label>
+          {:else if dev}
             <label class="devsw"><span>Device</span>
               <select value="" onchange={(ev) => { const to = ev.currentTarget.value; if (!to) return; const was = dev.name, nn = dev.others.find((o) => o.prefix === to)?.name; const n = switchDevice(card.props, def.meta.fields, dev.prefix, to); if (nn && card.props.name === was) card.props.name = nn; changed(); toast(n ? `Switched — ${n} setting${n > 1 ? 's' : ''} had no match on that device` : 'Switched every entity to the other device'); ev.currentTarget.value = ''; }}>
                 <option value="">{dev.name}</option>

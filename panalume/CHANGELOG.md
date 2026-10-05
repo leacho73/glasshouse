@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.25.1
+
+- **Space evenly** now takes in the gap to the card just beyond each end of the selection (e.g. the card to the right of a row), not only the edge of the view, so the whole row ends up with the same gaps. ↕ does the same with the cards above and below.
+
 ## 0.25.0
 
 - **Camera: tap for full screen.** Tapping a camera card opens a full-screen live view; the × in the top right (or Esc) closes it. Cards imported from ha-fusion get it too. Any card can also use the new **fullscreen** tap action to open a chosen camera.

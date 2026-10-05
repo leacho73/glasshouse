@@ -99,19 +99,26 @@
     if (k === 'hspace' || k === 'vspace') space(list, idx, k === 'hspace');
     changed();
   }
-  // Equal gaps between the selected cards, keeping their sizes. An edge of the
-  // view (or sidebar) that the outer card nearly touches gets the same gap.
+  // Equal gaps between the selected cards, keeping their sizes. The nearest thing
+  // on each side (another card beside them, or the edge of the view / sidebar)
+  // gets the same gap too, if it's close.
   function space(list, idx, horiz) {
-    const [pos, size] = horiz ? ['x', 'w'] : ['y', 'h'];
+    const [pos, size, cpos, csize] = horiz ? ['x', 'w', 'y', 'h'] : ['y', 'h', 'x', 'w'];
     const ps = idx.map((i) => list[i]).sort((a, b) => a[pos] - b[pos]);
     let start = ps[0][pos], end = Math.max(...ps.map((p) => p[pos] + p[size]));
     const sum = ps.reduce((n, p) => n + p[size], 0);
-    const roomGuess = Math.max(0, (end - start - sum) / Math.max(1, ps.length - 1));
-    const near = Math.max(48, roomGuess * 2);
-    const W = horiz ? zoneWidth(app.selected.zone === 'sidebar' ? 'sidebar' : 'main') : Infinity;
-    const lead = start <= near, trail = horiz && W - end <= near;
-    if (lead) start = 0;
-    if (trail) end = W;
+    const near = Math.max(48, (2 * Math.max(0, end - start - sum)) / Math.max(1, ps.length - 1));
+    // Other cards level with the selection.
+    const c0 = Math.min(...ps.map((p) => p[cpos])), c1 = Math.max(...ps.map((p) => p[cpos] + p[csize]));
+    const others = list.filter((q, i) => !idx.includes(i) && Math.min(q[cpos] + q[csize], c1) - Math.max(q[cpos], c0) > 4);
+    let before = 0, after = horiz ? zoneWidth(app.selected.zone === 'sidebar' ? 'sidebar' : 'main') : Infinity;
+    for (const q of others) {
+      if (q[pos] + q[size] <= start) before = Math.max(before, q[pos] + q[size]);
+      if (q[pos] >= end) after = Math.min(after, q[pos]);
+    }
+    const lead = start - before <= near, trail = after - end <= near;
+    if (lead) start = before;
+    if (trail) end = after;
     const n = ps.length - 1 + (lead ? 1 : 0) + (trail ? 1 : 0);
     if (n < 1) return;
     const gap = Math.max(0, (end - start - sum) / n);
@@ -199,8 +206,8 @@
           {#each [['left', 'mdi:align-horizontal-left'], ['top', 'mdi:align-vertical-top'], ['width', 'mdi:arrow-expand-horizontal'], ['height', 'mdi:arrow-expand-vertical']] as [k, ic]}
             <button class="sm" onclick={() => align(k)} title={k === 'width' || k === 'height' ? `Same ${k}` : `Align ${k}`}><Icon icon={ic} size="1.1em" /> {k === 'width' || k === 'height' ? `Same ${k}` : `Align ${k}`}</button>
           {/each}
-          <button class="sm" onclick={() => align('hspace')} title="Equal gaps side to side (and to the edge, if the outer cards are close to it)"><Icon icon="mdi:distribute-horizontal-center" size="1.1em" /> Space evenly ↔</button>
-          <button class="sm" onclick={() => align('vspace')} title="Equal gaps top to bottom"><Icon icon="mdi:distribute-vertical-center" size="1.1em" /> Space evenly ↕</button>
+          <button class="sm" onclick={() => align('hspace')} title="Equal gaps side to side, including to the card or edge just beyond each end"><Icon icon="mdi:distribute-horizontal-center" size="1.1em" /> Space evenly ↔</button>
+          <button class="sm" onclick={() => align('vspace')} title="Equal gaps top to bottom, including to the card just above and below"><Icon icon="mdi:distribute-vertical-center" size="1.1em" /> Space evenly ↕</button>
         </div>
         {#each multiTypes as g (g.type)}
           <h4>{g.list.length > 1 ? `All ${g.list.length}` : 'The'} {g.meta.name} card{g.list.length > 1 ? 's' : ''}</h4>

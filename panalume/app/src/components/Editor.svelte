@@ -104,12 +104,20 @@
   // gets the same gap too, if it's close.
   function space(list, idx, horiz) {
     const [pos, size, cpos, csize] = horiz ? ['x', 'w', 'y', 'h'] : ['y', 'h', 'x', 'w'];
-    const ps = idx.map((i) => list[i]).sort((a, b) => a[pos] - b[pos]);
-    let start = ps[0][pos], end = Math.max(...ps.map((p) => p[pos] + p[size]));
-    const sum = ps.reduce((n, p) => n + p[size], 0);
-    const near = Math.max(48, (2 * Math.max(0, end - start - sum)) / Math.max(1, ps.length - 1));
+    // Cards stacked over each other (overlapping side to side) move as one column
+    // (rows, for ↕), so different shapes and sizes keep their arrangement.
+    const cols = [];
+    for (const p of idx.map((i) => list[i]).sort((a, b) => a[pos] - b[pos])) {
+      const c = cols.at(-1);
+      if (c && p[pos] < c.end - 4) { c.cards.push(p); c.end = Math.max(c.end, p[pos] + p[size]); }
+      else cols.push({ start: p[pos], end: p[pos] + p[size], cards: [p] });
+    }
+    let start = cols[0].start, end = Math.max(...cols.map((c) => c.end));
+    const sum = cols.reduce((n, c) => n + c.end - c.start, 0);
+    const near = Math.max(48, (2 * Math.max(0, end - start - sum)) / Math.max(1, cols.length - 1));
     // Other cards level with the selection.
-    const c0 = Math.min(...ps.map((p) => p[cpos])), c1 = Math.max(...ps.map((p) => p[cpos] + p[csize]));
+    const sel = idx.map((i) => list[i]);
+    const c0 = Math.min(...sel.map((p) => p[cpos])), c1 = Math.max(...sel.map((p) => p[cpos] + p[csize]));
     const others = list.filter((q, i) => !idx.includes(i) && Math.min(q[cpos] + q[csize], c1) - Math.max(q[cpos], c0) > 4);
     let before = 0, after = horiz ? zoneWidth(app.selected.zone === 'sidebar' ? 'sidebar' : 'main') : Infinity;
     for (const q of others) {
@@ -119,11 +127,15 @@
     const lead = start - before <= near, trail = after - end <= near;
     if (lead) start = before;
     if (trail) end = after;
-    const n = ps.length - 1 + (lead ? 1 : 0) + (trail ? 1 : 0);
+    const n = cols.length - 1 + (lead ? 1 : 0) + (trail ? 1 : 0);
     if (n < 1) return;
     const gap = Math.max(0, (end - start - sum) / n);
     let at = start + (lead ? gap : 0);
-    for (const p of ps) { p[pos] = Math.round(at); at += p[size] + gap; }
+    for (const c of cols) {
+      const d = Math.round(at) - c.start;
+      for (const p of c.cards) p[pos] += d;
+      at += c.end - c.start + gap;
+    }
   }
   // Card sections that can be shown / hidden.
   const sections = $derived(def?.meta.sections || []);

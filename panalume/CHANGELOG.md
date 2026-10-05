@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.25.2
+
+- **Space evenly works with mixed shapes and sizes.** Cards stacked on top of each other (e.g. two cards in a column next to tall thermostats) are spaced as one column and stay together; for **↕**, cards side by side are spaced as one row. Before, ↕ on a row of cards turned it into a staircase.
+
 ## 0.25.1
 
 - **Space evenly** now takes in the gap to the card just beyond each end of the selection (e.g. the card to the right of a row), not only the edge of the view, so the whole row ends up with the same gaps. ↕ does the same with the cards above and below.

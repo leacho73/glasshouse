@@ -45,6 +45,7 @@
       for (const id of (myenergiOwn || '').split(',')) if (id) ids.add(id);
     }
     if (app.popup?.entity) ids.add(app.popup.entity);
+    if (app.popup?.camera) ids.add(app.popup.camera);
     // Members of light / switch groups, for "3/5 on" counts.
     for (const id of [...ids]) {
       const m = states.get(id)?.attributes.entity_id;

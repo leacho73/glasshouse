@@ -200,7 +200,7 @@
   .left.dim span { font-size: .85em; }
   .bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; }
   .bar i { display: block; height: 100%; background: var(--k); border-radius: 3px; transition: width 1s; }
-  .chips, .alerts { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chips, .alerts { display: flex; flex-wrap: wrap; gap: 5px; margin-left: -8px; } /* chip text lines up with the text above */
   .chips span { display: inline-flex; align-items: center; gap: 4px; font-size: .75em; padding: 3px 8px; border-radius: 9px; background: rgba(255,255,255,.06); }
   .chips small { color: var(--muted); font-size: 1em; }
   .alerts span { display: inline-flex; align-items: center; gap: 4px; font-size: .75em; font-weight: 600; padding: 3px 8px; border-radius: 9px; background: rgba(255,200,97,.14); color: #ffc861; }

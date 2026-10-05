@@ -10,6 +10,7 @@
 
   import { fromFusion } from '../lib/fusion.js';
   import { toast } from '../lib/ha.svelte.js';
+  import { devices, switchDevice } from '../lib/device.js';
   let importing = $state(false);
   async function importFusion() {
     if (!confirm('Replace this dashboard with one built from ha-fusion?')) return;
@@ -52,10 +53,10 @@
     { key: 'scale', label: 'Content size % (text, buttons, everything — also the −/+ under the card)', type: 'number' },
     { key: 'css', label: 'Custom CSS (declarations)', type: 'textarea' },
   ];
-  const ACTIONS = ['default', 'toggle', 'more-info', 'popup', 'navigate', 'service', 'url', 'none'];
+  const ACTIONS = ['default', 'toggle', 'more-info', 'fullscreen', 'popup', 'navigate', 'service', 'url', 'none'];
   const actFields = (a) => [
     { key: 'action', label: 'Action', type: 'select', options: ACTIONS },
-    ...(a?.action === 'more-info' || a?.action === 'toggle' ? [{ key: 'entity', label: 'Entity (blank: the card’s own)', type: 'entity' }] : []),
+    ...(a?.action === 'more-info' || a?.action === 'toggle' || a?.action === 'fullscreen' ? [{ key: 'entity', label: 'Entity (blank: the card’s own)', type: 'entity' }] : []),
     ...(a?.action === 'popup' ? [{ key: 'title', label: 'Pop-up title', type: 'text' }, { key: 'cards', label: 'Cards in pop-up', type: 'cards' }] : []),
     ...(a?.action === 'navigate' ? [{ key: 'view', label: 'View', type: 'select', options: app.config.views.map((v) => ({ value: v.id, label: v.name })) }] : []),
     ...(a?.action === 'service' ? [{ key: 'service', label: 'Service (domain.service)', type: 'text', placeholder: 'light.turn_on' }, { key: 'data', label: 'Data (JSON, template ok)', type: 'textarea' }] : []),
@@ -95,7 +96,27 @@
       if (k === 'width') list[i].w = ref.w;
       if (k === 'height') list[i].h = ref.h;
     }
+    if (k === 'hspace' || k === 'vspace') space(list, idx, k === 'hspace');
     changed();
+  }
+  // Equal gaps between the selected cards, keeping their sizes. An edge of the
+  // view (or sidebar) that the outer card nearly touches gets the same gap.
+  function space(list, idx, horiz) {
+    const [pos, size] = horiz ? ['x', 'w'] : ['y', 'h'];
+    const ps = idx.map((i) => list[i]).sort((a, b) => a[pos] - b[pos]);
+    let start = ps[0][pos], end = Math.max(...ps.map((p) => p[pos] + p[size]));
+    const sum = ps.reduce((n, p) => n + p[size], 0);
+    const roomGuess = Math.max(0, (end - start - sum) / Math.max(1, ps.length - 1));
+    const near = Math.max(48, roomGuess * 2);
+    const W = horiz ? zoneWidth(app.selected.zone === 'sidebar' ? 'sidebar' : 'main') : Infinity;
+    const lead = start <= near, trail = horiz && W - end <= near;
+    if (lead) start = 0;
+    if (trail) end = W;
+    const n = ps.length - 1 + (lead ? 1 : 0) + (trail ? 1 : 0);
+    if (n < 1) return;
+    const gap = Math.max(0, (end - start - sum) / n);
+    let at = start + (lead ? gap : 0);
+    for (const p of ps) { p[pos] = Math.round(at); at += p[size] + gap; }
   }
   // Card sections that can be shown / hidden.
   const sections = $derived(def?.meta.sections || []);
@@ -178,6 +199,8 @@
           {#each [['left', 'mdi:align-horizontal-left'], ['top', 'mdi:align-vertical-top'], ['width', 'mdi:arrow-expand-horizontal'], ['height', 'mdi:arrow-expand-vertical']] as [k, ic]}
             <button class="sm" onclick={() => align(k)} title={k === 'width' || k === 'height' ? `Same ${k}` : `Align ${k}`}><Icon icon={ic} size="1.1em" /> {k === 'width' || k === 'height' ? `Same ${k}` : `Align ${k}`}</button>
           {/each}
+          <button class="sm" onclick={() => align('hspace')} title="Equal gaps side to side (and to the edge, if the outer cards are close to it)"><Icon icon="mdi:distribute-horizontal-center" size="1.1em" /> Space evenly ↔</button>
+          <button class="sm" onclick={() => align('vspace')} title="Equal gaps top to bottom"><Icon icon="mdi:distribute-vertical-center" size="1.1em" /> Space evenly ↕</button>
         </div>
         {#each multiTypes as g (g.type)}
           <h4>{g.list.length > 1 ? `All ${g.list.length}` : 'The'} {g.meta.name} card{g.list.length > 1 ? 's' : ''}</h4>
@@ -225,6 +248,15 @@
                 <button class:off={card.props.hide?.[sct.key]} onclick={() => toggleSection(sct.key)}><Icon icon={card.props.hide?.[sct.key] ? 'mdi:eye-off-outline' : 'mdi:eye'} size="1em" /> {sct.label}</button>
               {/each}
             </div>
+          {/if}
+          {@const dev = devices(card.props, def?.meta.fields || [])}
+          {#if dev}
+            <label class="devsw"><span>Device</span>
+              <select value="" onchange={(ev) => { const to = ev.currentTarget.value; if (!to) return; const was = dev.name, nn = dev.others.find((o) => o.prefix === to)?.name; const n = switchDevice(card.props, def.meta.fields, dev.prefix, to); if (nn && card.props.name === was) card.props.name = nn; changed(); toast(n ? `Switched — ${n} setting${n > 1 ? 's' : ''} had no match on that device` : 'Switched every entity to the other device'); ev.currentTarget.value = ''; }}>
+                <option value="">{dev.name}</option>
+                {#each dev.others as o (o.prefix)}<option value={o.prefix}>Switch to {o.name}</option>{/each}
+              </select>
+            </label>
           {/if}
           <div class="fields">{#each def?.meta.fields || [] as f (f.key)}<Field obj={card.props} {f} hide={f.section && card.props.hide?.[f.section]} ontoggle={f.section ? () => toggleSection(f.section) : null} />{/each}</div>
           <Field obj={card} f={{ key: 'visible', label: 'Visible when (template, blank = always)', type: 'text', placeholder: "{{ is_state('sun.sun','below_horizon') }}" }} />
@@ -355,6 +387,9 @@
   select.sm { appearance: auto; padding: 6px 8px; }
   .grp { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); background: rgba(122,162,255,.08); border-radius: 10px; padding: 8px 10px; }
   .grp span { flex: 1; min-width: 150px; }
+  .devsw { display: flex; align-items: center; gap: 10px; font-size: 13px; padding: 8px 10px; border-radius: 10px; background: rgba(122,162,255,.08); }
+  .devsw span { color: var(--muted); }
+  .devsw select { flex: 1; min-width: 0; }
   .secs { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
   .secs .lbl { font-size: 12px; color: var(--muted); margin-right: 2px; }
   .secs button { display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(122,162,255,.4); background: rgba(122,162,255,.12); color: var(--text); border-radius: 20px; padding: 4px 10px; font-size: 12px; }

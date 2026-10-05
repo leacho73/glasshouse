@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.25.0
+
+- **Camera: tap for full screen.** Tapping a camera card opens a full-screen live view; the × in the top right (or Esc) closes it. Cards imported from ha-fusion get it too. Any card can also use the new **fullscreen** tap action to open a chosen camera.
+- **Switch a card to another device in one go.** Cards with several entities from one device (3D printer, washer, dryer, Zappi…) have a **Device** box at the top of their settings: pick the other device (e.g. your X1C instead of the P1S) and every entity moves across. Ones the other device doesn't have are cleared, and you're told how many.
+- **Space evenly.** Select several cards and use *Space evenly ↔* or *↕* to make the gaps between them equal. If the outer card is close to the edge of the view (or the sidebar), that edge gets the same gap.
+- **Phone layout closes gaps.** On a custom phone layout, deleting a card (or any edit that leaves an empty strip across the screen) moves everything below up, so there's no gap to fill by hand. Side-by-side cards keep their rows.
+- **Small 3D printer card shows more:** time left, progress and layer, nozzle and bed temperatures, the filament (when wide enough), a light button, and the last print's name when it's finished. An idle printer shows a printer icon instead of "0%".
+- Washer, dryer, dishwasher, printer and EV cards: the text in the little chips now lines up with the text above them.
+
 ## 0.24.1
 
 - **Zappi card: Intelligent Octopus Go's 6 cheap hours.** Tick *Intelligent Octopus Go: track the cheap charging hours* and the card shows how much of the day's cheap charging is left (e.g. "4h 50m cheap charging left · ≈35 kWh at this rate"), with a bar that turns amber once it's used up. It counts only the time the car actually charged, midday to midday as Octopus does, from the Zappi's power history, so it's right even if the dashboard was closed. The number of hours can be changed.

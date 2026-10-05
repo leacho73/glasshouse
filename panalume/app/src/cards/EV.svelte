@@ -87,7 +87,7 @@
   .range span { font-size: .5em; color: var(--muted); }
   .dim { color: var(--muted); font-size: .85em; text-transform: none; }
   .small { font-size: .75em; }
-  .chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 4px; }
+  .chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 4px; margin-left: -8px; }
   .chip { display: inline-flex; align-items: center; gap: 4px; font-size: .75em; padding: 4px 8px; border-radius: 8px; background: rgba(255,255,255,.07); color: var(--muted); border: 0; }
   .chip.on { color: #5bd88f; background: rgba(91,216,143,.14); }
   .chip.warn { color: #ffc861; }

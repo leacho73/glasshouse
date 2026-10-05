@@ -8,7 +8,7 @@
   // Shift/Ctrl-click or drag a box on empty space to select several.
   // Positions snap to a 10px grid (hold Shift while dragging for 1px).
   import CardFrame from './CardFrame.svelte';
-  import { app, layout, GRID, changed, zoneList, ensureEditable, selectionSet, fitOverflow } from '../lib/config.svelte.js';
+  import { app, layout, GRID, changed, zoneList, ensureEditable, selectionSet, fitOverflow, usualGap } from '../lib/config.svelte.js';
 
   let { available, autoDevice } = $props();
   let vh = $state(innerHeight);
@@ -121,18 +121,6 @@
   // brought back within 5 px of the gap snaps to it and joins up again.
   const LINK = 4, GAP_SNAP = 5;
   const overlaps = (a0, a1, b0, b1) => Math.min(a1, b1) - Math.max(a0, b0) > 4;
-  function usualGap(list) {
-    const n = new Map();
-    for (const a of list) for (const b of list) {
-      if (a === b) continue;
-      const gx = b.x - (a.x + a.w), gy = b.y - (a.y + a.h);
-      if (gx >= 4 && gx <= 48 && overlaps(a.y, a.y + a.h, b.y, b.y + b.h)) n.set(Math.round(gx), (n.get(Math.round(gx)) || 0) + 1);
-      if (gy >= 4 && gy <= 48 && overlaps(a.x, a.x + a.w, b.x, b.x + b.w)) n.set(Math.round(gy), (n.get(Math.round(gy)) || 0) + 1);
-    }
-    let best = 20, c = 0;
-    for (const [g, k] of n) if (k > c || (k === c && g < best)) { best = g; c = k; }
-    return best;
-  }
   const joined = (gap, G) => Math.abs(gap - G) <= LINK || (gap >= 0 && gap <= LINK);
   /** Cards joined to card i on side d ('s' below, 'n' above, 'e' right, 'w' left); below cascades. */
   function links(list, i, d, G) {

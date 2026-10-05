@@ -22,7 +22,7 @@ Panalume is a Home Assistant **app** that gives you a dashboard you design in th
 - **Templates everywhere** — any text, icon, colour or style can be a live Home Assistant template (`{{ states('sensor.x') }}`), and any card can be shown or hidden by a template.
 - **Style anything** — background, colours, radius, border, shadow, glass blur, fonts, custom CSS, per card or for the whole theme, plus a **− / +** to scale everything inside a card.
 - **Pop-ups & actions** — tap / hold to toggle, open a detailed pop-up, open a pop-up of other cards, change view, call a service or open a URL.
-- **Groups & multi-select** — rooms move as one; select several cards to group, align or size them together, or show / hide the same part on all of them at once. Copy cards to another view. Undo, duplicate, keyboard nudging.
+- **Groups & multi-select** — rooms move as one; select several cards to group, align, size or space them evenly, or show / hide the same part on all of them at once. Copy cards to another view. Undo, duplicate, keyboard nudging.
 - **Fast** — a ~75 KB (gzipped) Svelte app that only subscribes to the entities your cards use.
 
 ## Energy, front and centre
@@ -91,11 +91,11 @@ Press the faint pencil (or **E**) to edit. Add cards from the panel, drag and re
 
 ### On your phone
 
-Phones get an automatic single-column version of your tablet layout: navigation across the top, rooms kept together, small cards paired two-per-row. Switch phone (or desktop) to a custom layout any time.
+Phones get an automatic single-column version of your tablet layout: navigation across the top, rooms kept together, small cards paired two-per-row. Switch phone (or desktop) to a custom layout any time; on the phone, deleting a card closes the gap it leaves.
 
 ### All the cards
 
-Button / tile · Light · Thermostat (draggable dial) · Climate group (several thermostats / AC units at once) · Door lock · 3D printer · Hot tub · Washing machine · Tumble dryer · Dishwasher · Media player (artwork, volume, source, speaker grouping) · Cover / blind · Slider · Option picker · Entities list · Glance · Sensor with graph · Gauge · History graph · Weather · Clock · Sun & moon (sunrise / sunset, moon phase, moonrise / moonset) · Text / Markdown · Template lines · People · Camera · Web page · Image · Navigation · Divider · Alarm panel · and the energy cards above.
+Button / tile · Light · Thermostat (draggable dial) · Climate group (several thermostats / AC units at once) · Door lock · 3D printer · Hot tub · Washing machine · Tumble dryer · Dishwasher · Media player (artwork, volume, source, speaker grouping) · Cover / blind · Slider · Option picker · Entities list · Glance · Sensor with graph · Gauge · History graph · Weather · Clock · Sun & moon (sunrise / sunset, moon phase, moonrise / moonset) · Text / Markdown · Template lines · People · Camera (tap for full-screen live view) · Web page · Image · Navigation · Divider · Alarm panel · and the energy cards above.
 
 ### Coming from ha-fusion?
 

@@ -182,6 +182,8 @@ function normalise(c) {
   c.style ??= {};
   c.tap ??= {};
   c.hold ??= {};
+  // Cameras imported from ha-fusion were saved as "more-info"; they now open full screen.
+  if (c.type === 'camera' && c.tap.action === 'more-info' && !c.tap.entity) delete c.tap.action;
   return c;
 }
 
@@ -190,6 +192,7 @@ let lastSaved = '';
 const undoStack = [];
 export const undo = $state({ count: 0 });
 export function changed() {
+  if (app.config && editTarget() === 'phone') closeGaps(app.config.layouts.phone);
   app.dirty = true;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(save, 800);
@@ -451,6 +454,39 @@ export function setMainWidth(apply) {
     if (l.zones[z] && from > 100 && to > 100) l.zones[z] = refit(list, from, to);
   }
   changed();
+}
+
+const overlaps = (a0, a1, b0, b1) => Math.min(a1, b1) - Math.max(a0, b0) > 4;
+/** The gap most cards in a list sit apart by. */
+export function usualGap(list) {
+  const n = new Map();
+  for (const a of list) for (const b of list) {
+    if (a === b) continue;
+    const gx = b.x - (a.x + a.w), gy = b.y - (a.y + a.h);
+    if (gx >= 4 && gx <= 48 && overlaps(a.y, a.y + a.h, b.y, b.y + b.h)) n.set(Math.round(gx), (n.get(Math.round(gx)) || 0) + 1);
+    if (gy >= 4 && gy <= 48 && overlaps(a.x, a.x + a.w, b.x, b.x + b.w)) n.set(Math.round(gy), (n.get(Math.round(gy)) || 0) + 1);
+  }
+  let best = 20, c = 0;
+  for (const [g, k] of n) if (k > c || (k === c && g < best)) { best = g; c = k; }
+  return best;
+}
+
+/** Phone: an empty band across the whole screen (e.g. where a card was deleted)
+ *  shrinks to the usual gap, so everything below moves up. Side-by-side cards keep their rows. */
+export function closeGaps(l) {
+  for (const list of Object.values(l.zones)) {
+    if (list.length < 2) continue;
+    const G = usualGap(list);
+    const order = [...list].sort((a, b) => a.y - b.y);
+    let bottom = order[0].y + order[0].h, shift = 0;
+    const ys = new Map();
+    for (const p of order) {
+      if (p.y > bottom + G) shift += p.y - (bottom + G);
+      bottom = Math.max(bottom, p.y + p.h);
+      ys.set(p, p.y - shift);
+    }
+    for (const [p, y] of ys) if (p.y !== y) p.y = y;
+  }
 }
 
 /** Scale any view (or the sidebar) whose cards run past its right edge back inside it. */

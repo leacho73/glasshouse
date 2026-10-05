@@ -61,7 +61,7 @@ export function fromFusion(db, { energy = true } = {}) {
     for (const it of items || []) {
       if (it.type === 'camera') {
         flush();
-        const id = add('camera', { entity: it.entity_id, mode: it.stream ? 'live' : 'snapshot', refresh: 5, fit: 'cover', show_name: true }, { style: { padding: '0' }, tap: { action: 'more-info' } });
+        const id = add('camera', { entity: it.entity_id, mode: it.stream ? 'live' : 'snapshot', refresh: 5, fit: 'cover', show_name: true }, { style: { padding: '0' }, tap: {} });
         const h = Math.round((w * 9) / 16);
         out.push({ card: id, x, y: cy, w, h });
         cy += h + GAP;

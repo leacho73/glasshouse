@@ -148,21 +148,32 @@
     <div class="ring" style="width:{ringSize}px;height:{ringSize}px">
       <svg viewBox="0 0 100 100" aria-hidden="true">
         <circle cx="50" cy="50" r={R} class="track" />
-        <circle cx="50" cy="50" r={R} class="fill" stroke-dasharray={C} stroke-dashoffset={C * (1 - pct / 100)} />
+        <circle cx="50" cy="50" r={R} class="fill" stroke-dasharray={C} stroke-dashoffset={C * (1 - (active || status === 'finished' ? pct : 0) / 100)} />
       </svg>
       <div class="inner">
-        {#if img && !small}<img src={img} alt="" />{:else}<span class="pct">{Math.round(pct)}<small>%</small></span>{/if}
+        {#if img}<img src={img} alt="" />
+        {:else if !active && status !== 'finished'}<Icon icon="mdi:printer-3d" size={small ? '1.5em' : '3em'} style="color:var(--c)" />
+        {:else}<span class="pct">{Math.round(pct)}<small>%</small></span>{/if}
       </div>
     </div>
     <div class="info">
-      {#if small}<div class="name">{t(props.name) || 'Printer'} <span class="st">· {stage || label}</span></div>{/if}
+      {#if small}<div class="sname"><span class="name">{t(props.name) || 'Printer'}</span><span class="st">· {stage || label}</span></div>{/if}
       {#if task && (active || status === 'finished' || status === 'failed') && !small}<div class="task" title={task}>{task}</div>{/if}
       {#if active && left != null}
         <div class="left"><b>{dur(left)}</b> <span>left{finish ? ` · done ${tm(finish)}` : ''}</span></div>
       {:else if !small}
         <div class="left"><b>{stage || label}</b></div>
       {/if}
-      {#if !small}
+      {#if small}
+        {@const sub = active ? [img ? `${Math.round(pct)}%` : '', layer != null && layers ? `layer ${layer} / ${layers}` : ''] : [status === 'finished' || status === 'failed' ? task : '']}
+        {#if sub.some(Boolean)}<div class="sub one">{sub.filter(Boolean).join(' · ')}</div>{/if}
+        {#if h >= 92 && (temps.length || fil)}
+          <div class="chips one">
+            {#each temps.filter((x) => x[0] !== 'Chamber') as [n, ic, v]}<span class="tc" title={n}><Icon icon={ic} size="1em" />{formatNumber(v, 0)}°</span>{/each}
+            {#if fil && w >= 400}<span class="tc" title="Filament">{#if fil.color}<i style="background:{fil.color}"></i>{/if}{fil.name}</span>{/if}
+          </div>
+        {/if}
+      {:else}
         {#if active && stage}<div class="stage">{stage}</div>{/if}
         {#if img}<div class="sub">{[`${Math.round(pct)}%`, layer != null && layers ? `layer ${layer} / ${layers}` : ''].filter(Boolean).join(' · ')}</div>
         {:else if layer != null && layers}<div class="sub">Layer {layer} / {layers}</div>{/if}
@@ -187,10 +198,13 @@
         {/if}
       {/if}
     </div>
-    {#if small && controls && w >= 340}
-      <div class="btns" data-stop>
-        {#if status === 'paused' && props.resume}<button class="sq" onclick={() => press(props.resume)} title="Resume"><Icon icon="mdi:play" size="1.1em" /></button>
-        {:else if props.pause}<button class="sq" onclick={() => press(props.pause)} title="Pause"><Icon icon="mdi:pause" size="1.1em" /></button>{/if}
+    {#if small && ((controls && w >= 340) || (show('light') && props.light && w >= 280))}
+      <div class="btns side" data-stop>
+        {#if controls && w >= 340}
+          {#if status === 'paused' && props.resume}<button class="sq" onclick={() => press(props.resume)} title="Resume"><Icon icon="mdi:play" size="1.1em" /></button>
+          {:else if props.pause}<button class="sq" onclick={() => press(props.pause)} title="Pause"><Icon icon="mdi:pause" size="1.1em" /></button>{/if}
+        {/if}
+        {#if show('light') && props.light && w >= 280}<button class="sq" class:on={lightOn} onclick={() => toggle(ent(props.light))} title="Light"><Icon icon={lightOn ? 'mdi:lightbulb-on' : 'mdi:lightbulb-outline'} size="1.1em" /></button>{/if}
       </div>
     {/if}
   </div>
@@ -226,12 +240,19 @@
   .small .info { gap: 2px; }
   .task { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .left b { font-size: 1.5em; font-weight: 600; letter-spacing: -.02em; }
+  .small .left { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .small .left b { font-size: 1.05em; }
   .left span { color: var(--muted); font-size: .85em; }
+  .sname { display: flex; align-items: baseline; gap: 5px; min-width: 0; }
+  .sname .name { flex: 0 1 auto; }
+  .sname .st { flex: none; }
   .st { color: var(--c); font-weight: 500; font-size: .9em; }
   .stage { font-size: .8em; color: var(--c); }
   .sub { font-size: .82em; color: var(--muted); }
-  .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-left: -8px; } /* chip text lines up with the text above */
+  .stacked .chips { margin-left: 0; }
+  .one { flex-wrap: nowrap; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .btns.side { flex-wrap: nowrap; flex: none; }
   .tc { display: inline-flex; align-items: center; gap: 4px; font-size: .78em; padding: 3px 8px; border-radius: 99px; background: rgba(255,255,255,.06); white-space: nowrap; font-variant-numeric: tabular-nums; }
   .tc em { font-style: normal; color: var(--muted); }
   .tc i { width: .8em; height: .8em; border-radius: 50%; box-shadow: 0 0 0 1px rgba(255,255,255,.25); }

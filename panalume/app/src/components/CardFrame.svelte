@@ -47,7 +47,7 @@
     // picked for the action, the card's own choice (meta.infoEntity), or else their first entity setting that's filled in.
     let entity = t(act.entity) || t(card.props?.entity);
     if (!entity && kind === 'more-info' && meta.infoEntity) entity = meta.infoEntity(card.props || {});
-    if (!entity && (kind === 'more-info' || kind === 'toggle')) {
+    if (!entity && (kind === 'more-info' || kind === 'toggle' || kind === 'fullscreen')) {
       const f = (meta.fields || []).find((f) => f.type === 'entity' && card.props?.[f.key] && !String(card.props[f.key]).includes('{'));
       if (f) entity = card.props[f.key];
     }
@@ -57,6 +57,8 @@
       if (e && (canToggle(entity) || ['scene', 'script', 'button', 'input_button'].includes(domain(entity)))) toggle(e);
       else if (entity) app.popup = { entity };
     } else if (kind === 'more-info' && entity) app.popup = { entity };
+    else if (kind === 'fullscreen' && entity?.startsWith('camera.')) app.popup = { camera: entity, name: t(card.props?.name) };
+    else if (kind === 'fullscreen' && entity) app.popup = { entity };
     else if (kind === 'popup') app.popup = { cards: act.cards || [], title: act.title };
     else if (kind === 'navigate' && act.view) setView(act.view);
     else if (kind === 'url' && act.url) window.open(t(act.url), act.newTab === false ? '_self' : '_blank');

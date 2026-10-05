@@ -1,7 +1,7 @@
 <script module>
   export const meta = {
     type: 'camera', name: 'Camera', icon: 'mdi:cctv', category: 'Media',
-    size: { w: 400, h: 240 }, tap: 'more-info',
+    size: { w: 400, h: 240 }, tap: 'fullscreen',
     defaults: { entity: '', mode: 'snapshot', refresh: 5, fit: 'auto', show_name: true },
     fields: [
       { key: 'entity', label: 'Camera', type: 'entity', domain: ['camera', 'image'] },

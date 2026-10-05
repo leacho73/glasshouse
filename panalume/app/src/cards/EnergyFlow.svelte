@@ -50,18 +50,36 @@
   // Where the house's power is coming from and going to right now: solar,
   // battery and house figures, and a flow chart whose bands are as thick as
   // the power on each route (solar → house, solar → battery, battery → house…).
+  import { untrack } from 'svelte';
   import Icon from '../components/Icon.svelte';
   import { t, ent } from '../lib/tpl.js';
   let { props, w = 460, h = 320 } = $props();
   const show = (k) => !props.hide?.[k];
 
-  const watts = (id) => {
+  const read = (id) => {
     const e = ent(id);
     const v = Number(e?.state);
     if (!e || !Number.isFinite(v)) return null;
     const u = (e.attributes.unit_of_measurement || 'W').toLowerCase();
     return u === 'kw' ? v * 1000 : u === 'mw' ? v * 1e6 : v;
   };
+  // Solar, grid and battery sensors often report a moment apart, and adding up
+  // a half-updated set makes the figures flicker through in-between values.
+  // Wait for them to settle (at most a second) before redrawing.
+  const ids = $derived(Object.entries(props).filter(([k, v]) => k !== 'battery_soc' && typeof v === 'string' && v.startsWith('sensor.')).map(([, v]) => v));
+  const live = $derived(Object.fromEntries(ids.map((id) => [id, read(id)])));
+  let settled = $state.raw(null);
+  let timer, since = 0;
+  $effect(() => {
+    const v = live;
+    if (!untrack(() => settled)) return void (settled = v);
+    clearTimeout(timer);
+    since ||= Date.now();
+    const go = () => { settled = v; since = 0; };
+    Date.now() - since > 1000 ? go() : (timer = setTimeout(go, 350));
+  });
+  $effect(() => () => clearTimeout(timer));
+  const watts = (id) => (settled && id in settled ? settled[id] : read(id));
   const pos = (v) => Math.max(0, v ?? 0);
 
   const hasGrid = $derived(show('grid') && !!(props.grid || props.grid_import || props.grid_export || props.grid_home));

@@ -105,6 +105,8 @@
   const showStatus = $derived(h >= 125 || (charging && h >= 105));
   const showMileage = $derived(h >= 160);
   const lock = $derived(ent(props.lock));
+  let roomW = $state(0), fullW = $state(0);
+  const lockText = $derived(lock && (lock.entity_id.startsWith('binary_sensor') ? (lock.state === 'on' ? 'Unlocked' : 'Locked') : stateText(lock)));
   const clim = $derived(ent(props.climate));
   const color = $derived(soc < 20 ? '#ff7a90' : soc < 50 ? '#ffc861' : '#5bd88f');
   const name = $derived(t(props.name) || nameOf([props.soc, props.range, props.mileage].filter((id) => id && states.has(id))) || 'EV');
@@ -126,10 +128,15 @@
     <div class="name">{name}</div>
     {#if props.range && show('range')}<div class="range">{formatNumber(ent(props.range)?.state, 0)} <span>{ent(props.range)?.attributes.unit_of_measurement || ''}</span></div>{/if}
     {#if show('status') && showStatus && status}<div class="dim" class:one={short} title={status}>{status}</div>{/if}
-    <div class="chips" data-stop>
-      {#if plug && show('plug')}<span class="chip" class:on={plugged}><Icon icon={plugged ? 'mdi:power-plug' : 'mdi:power-plug-off'} size="1em" />{plugged ? 'Plugged' : 'Unplugged'}</span>{/if}
-      {#if lock && show('lock')}<span class="chip" class:warn={lock.state === 'on' && lock.entity_id.startsWith('binary_sensor')}><Icon icon={lock.state === 'on' ? 'mdi:lock-open-variant' : 'mdi:lock'} size="1em" />{lock.entity_id.startsWith('binary_sensor') ? (lock.state === 'on' ? 'Unlocked' : 'Locked') : stateText(lock)}</span>{/if}
-      {#if clim && show('climate')}<button class="chip" class:on={climOn} onclick={climate}><Icon icon="mdi:fan" size="1em" />{climOn ? 'Climate on' : climBtn && !short ? 'Start climate' : 'Climate'}</button>{/if}
+    <div class="chipbox" bind:clientWidth={roomW}>
+      {#snippet chipset()}
+        {#if plug && show('plug')}<span class="chip" class:on={plugged} title={plugged ? 'Plugged in' : 'Unplugged'}><Icon icon={plugged ? 'mdi:power-plug' : 'mdi:power-plug-off'} size="1em" /><span class="lbl">{plugged ? 'Plugged' : 'Unplugged'}</span></span>{/if}
+        {#if lock && show('lock')}<span class="chip" class:warn={lock.state === 'on' && lock.entity_id.startsWith('binary_sensor')} title={lockText}><Icon icon={lock.state === 'on' ? 'mdi:lock-open-variant' : 'mdi:lock'} size="1em" /><span class="lbl">{lockText}</span></span>{/if}
+        {#if clim && show('climate')}<button class="chip" class:on={climOn} onclick={climate} title={climOn ? 'Climate on' : 'Start climate'}><Icon icon="mdi:fan" size="1em" /><span class="lbl">{climOn ? 'Climate on' : climBtn && !short ? 'Start climate' : 'Climate'}</span></button>{/if}
+      {/snippet}
+      <div class="chips" class:bare={fullW > roomW + 1} data-stop>{@render chipset()}</div>
+      <!-- Invisible copy with labels, to tell whether they fit on one row. -->
+      <div class="chips measure" aria-hidden="true" inert bind:clientWidth={fullW}>{@render chipset()}</div>
     </div>
     {#if props.mileage && show('mileage') && showMileage}<div class="dim small">{formatNumber(ent(props.mileage)?.state, 0)} {ent(props.mileage)?.attributes.unit_of_measurement || ''}</div>{/if}
   </div>
@@ -150,10 +157,13 @@
   .range span { font-size: .5em; color: var(--muted); }
   .dim { color: var(--muted); font-size: .85em; text-transform: none; }
   .small { font-size: .75em; }
-  .chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 4px; margin-left: -8px; }
+  /* Always one row: labels go first when it's tight, then any chip that still doesn't fit drops out whole. */
+  .chipbox { position: relative; margin-top: 4px; margin-left: -8px; }
+  .chips { display: flex; gap: 5px; flex-wrap: wrap; max-height: calc(.9em + 10px); overflow: hidden; }
+  .bare .lbl { display: none; }
+  .measure { position: absolute; top: 0; left: 0; flex-wrap: nowrap; width: max-content; visibility: hidden; pointer-events: none; }
   .short .info { gap: 2px; }
-  /* One row of chips; any that don't fit drop out whole rather than being cut. */
-  .short .chips { max-height: calc(.9em + 10px); overflow: hidden; margin-top: 2px; }
+  .short .chipbox { margin-top: 2px; }
   .short { gap: 12px; }
   .one { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .chip { white-space: nowrap; flex: none; display: inline-flex; align-items: center; gap: 4px; font-size: .75em; padding: 4px 8px; border-radius: 8px; background: rgba(255,255,255,.07); color: var(--muted); border: 0; }

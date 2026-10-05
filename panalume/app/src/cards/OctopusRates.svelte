@@ -77,7 +77,8 @@
   });
   const slots = $derived(all.filter((r) => r.end > range[0] && r.start < range[1]));
   const cur = $derived(all.find((r) => r.start <= now && now < r.end));
-  const nextChange = $derived(cur ? all.find((r) => r.start >= cur.end && (Math.abs(r.value - cur.value) > 1e-6 || r.tag !== cur.tag)) : null);
+  // Only a change in price counts: a Saving Session keeps the rate and has its own line.
+  const nextChange = $derived(cur ? all.find((r) => r.start >= cur.end && Math.abs(r.value - cur.value) > 1e-6) : null);
   const nowSess = $derived(live.find((x) => x.start <= now && now < x.end));
   const nextSess = $derived(octo.find((x) => x.start > now && x.start - now < 2 * 864e5 && x.kind !== 'powerdown' && (x.joined || x.joinable)));
   const vals = $derived(slots.map((s) => s.value));

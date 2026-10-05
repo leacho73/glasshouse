@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.26.1
+
+- **EV card: chips no longer stack.** When there isn't room for Plugged, Locked and Climate side by side, they stay on one row as icons only (hover for the state) instead of piling on top of each other and pushing the car's name off the card.
+- **Electricity price card: Saving Sessions don't count as a price change.** The "next price" line skipped straight to the session start (e.g. "27.5p from 18:00") even though the rate stayed the same; it now shows when the price actually changes.
+- **Energy flow card stops flickering.** Solar, grid and battery sensors often report a moment apart, and the card briefly showed in-between figures. It now waits for the readings to settle before redrawing.
+
 ## 0.26.0
 
 - **Electric vehicle card: Renault, Dacia and Alpine cars.** Cars from the Renault integration now fill in properly: battery, range, charge state in plain English ("Not charging", "Waiting for its charging schedule"), time left, target, plug and mileage. The Climate chip presses the car's *Start air conditioner* button and shows when the air conditioning is running.

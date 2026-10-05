@@ -1,9 +1,12 @@
 <script module>
   import { find } from '../lib/octopus.js';
+  // Left blank, the battery power comes from SolarEdge's battery sensor if there is one.
+  const SE_BATT = ['sensor.solaredge_b1_dc_power', 'sensor.solaredge_i1_b1_dc_power'];
   const first = (...res) => { for (const re of res) { const id = find(re); if (id) return id; } return ''; };
   export const meta = {
     type: 'energyflow', name: 'Energy flow', icon: 'mdi:transit-connection-variant', category: 'Energy',
     size: { w: 460, h: 320 }, tap: 'none',
+    watch: (p) => (p.battery ? [] : SE_BATT),
     defaults: { name: 'Energy flow' },
     sections: [{ key: 'self', label: 'Self-powered %' }, { key: 'tiles', label: 'Solar / battery / house figures' }, { key: 'flow', label: 'Flow chart' }, { key: 'grid', label: 'Grid', section: 'grid' }, { key: 'battery', label: 'Battery', section: 'battery' }],
     // Totals plus, where the integration has them, a sensor for each route
@@ -32,7 +35,7 @@
       { key: 'grid_invert', label: 'Invert grid sign', type: 'bool', section: 'grid' },
       { key: 'grid_import', label: '…or grid import power', type: 'entity', domain: 'sensor', section: 'grid' },
       { key: 'grid_export', label: '…and grid export power', type: 'entity', domain: 'sensor', section: 'grid' },
-      { key: 'battery', label: 'Battery power, one sensor (+discharge / −charge)', type: 'entity', domain: 'sensor', section: 'battery' },
+      { key: 'battery', label: 'Battery power, one sensor (+discharge / −charge; blank = SolarEdge battery if found)', type: 'entity', domain: 'sensor', section: 'battery' },
       { key: 'battery_invert', label: 'Invert battery sign', type: 'bool', section: 'battery' },
       { key: 'battery_soc', label: 'Battery %', type: 'entity', domain: 'sensor', section: 'battery' },
       { key: 'solar_home', label: 'Route: solar → house (optional)', type: 'entity', domain: 'sensor' },
@@ -66,7 +69,7 @@
   // Solar, grid and battery sensors often report a moment apart, and adding up
   // a half-updated set makes the figures flicker through in-between values.
   // Wait for them to settle (at most a second) before redrawing.
-  const ids = $derived(Object.entries(props).filter(([k, v]) => k !== 'battery_soc' && typeof v === 'string' && v.startsWith('sensor.')).map(([, v]) => v));
+  const ids = $derived([...Object.entries(props).filter(([k, v]) => k !== 'battery_soc' && typeof v === 'string' && v.startsWith('sensor.')).map(([, v]) => v), ...(props.battery ? [] : SE_BATT)]);
   const live = $derived(Object.fromEntries(ids.map((id) => [id, read(id)])));
   let settled = $state.raw(null);
   let timer, since = 0;
@@ -88,7 +91,9 @@
   // Totals: + grid = importing, + battery = discharging.
   const solar = $derived(pos(watts(props.solar)));
   const grid = $derived(props.grid ? (watts(props.grid) ?? 0) * (props.grid_invert ? -1 : 1) : pos(watts(props.grid_import)) - pos(watts(props.grid_export)));
-  const batt = $derived(props.battery ? (watts(props.battery) ?? 0) * (props.battery_invert ? -1 : 1) : null);
+  // SolarEdge reports battery DC power as + charging, so the fallback is inverted.
+  const autoBatt = $derived(props.battery ? '' : SE_BATT.find((id) => ent(id)) || '');
+  const batt = $derived(props.battery ? (watts(props.battery) ?? 0) * (props.battery_invert ? -1 : 1) : autoBatt ? -(watts(autoBatt) ?? 0) : null);
 
   // Each route: its own sensor where there is one, otherwise worked out —
   // solar feeds the house first, then the battery, then export; the battery
@@ -99,15 +104,17 @@
       const r = Object.fromEntries(Object.entries(given).map(([k, id]) => [k, pos(watts(id))]));
       // Route sensors are often templates that don't quite add up (e.g. battery
       // → house missing the inverter's share). Trust the totals where we have them.
+      if (props.solar && r.sh + r.sb + r.sg - solar > 50) r.sh = pos(solar - r.sb - r.sg);
       if (batt != null) {
         const dis = pos(batt), charge = pos(-batt);
         if (Math.abs(r.bh + r.bg - dis) > 50) r.bh = pos(dis - r.bg);
         if (Math.abs(r.sb + r.gb - charge) > 50) r.gb = pos(charge - r.sb);
       } else if (props.home) {
         // No battery power sensor: whatever the house uses that solar and the
-        // grid don't cover is coming from the battery.
-        const short = pos(watts(props.home)) - r.sh - r.bh - r.gh;
-        if (short > 50 && (r.bh > 0 || r.bg > 0)) r.bh += short;
+        // grid don't cover is coming from the battery — no more, no less
+        // (SolarEdge's battery → house template can run well over).
+        const rest = pos(pos(watts(props.home)) - r.sh - r.gh);
+        if (Math.abs(rest - r.bh) > 50 && (r.bh > 0 || r.bg > 0)) r.bh = rest;
       }
       return r;
     }

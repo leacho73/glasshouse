@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.26.2
+
+- **Energy flow card: battery and export figures fixed.** SolarEdge's battery → house template sensor can read far more than the house is using, which made the battery look like it was putting out over 4 kW (and the flow into export too big). The card now caps the battery and solar routes at what the house uses and the panels make.
+- **Energy flow card uses your SolarEdge battery automatically.** If **Battery power** is left blank (e.g. on a card set up before it was filled in for you), the SolarEdge battery sensor is used, the right way round. Setting one yourself still takes priority.
+
 ## 0.26.1
 
 - **EV card: chips no longer stack.** When there isn't room for Plugged, Locked and Climate side by side, they stay on one row as icons only (hover for the state) instead of piling on top of each other and pushing the car's name off the card.

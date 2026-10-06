@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.26.3
+
+- **Washer and dryer: smoother drum.** The drum turns steadily without jumping back to the start, and speeds up and slows down smoothly when the washer goes into or out of its spin.
+- **Washer, dryer and dishwasher: smaller time left.** The "1h 41m" is a more sensible size and sits on one line with when it'll be done.
+
 ## 0.26.2
 
 - **Energy flow card: battery and export figures fixed.** SolarEdge's battery → house template sensor can read far more than the house is using, which made the battery look like it was putting out over 4 kW (and the flow into export too big). The card now caps the battery and solar routes at what the house uses and the panels make.

@@ -82,6 +82,26 @@
   const pick = (o) => callService(props.control.split('.')[0], 'select_option', { option: o }, { entity_id: props.control });
   const find = (re) => ctlOpts.find((o) => re.test(o));
 
+  // The drum turns by adding up its angle each frame rather than with a CSS
+  // animation, so it never jumps back to the start and eases between speeds
+  // (once round in 3 s, or every half second on spin).
+  let drum = $state();
+  let angle = 0;
+  $effect(() => {
+    if (!drum || !running) return;
+    let speed = 0, last = performance.now(), raf;
+    const tick = (t) => {
+      const dt = Math.min(0.1, (t - last) / 1000);
+      last = t;
+      speed += ((spinning ? 720 : 120) - speed) * Math.min(1, dt * 2.5);
+      angle = (angle + speed * dt) % 360;
+      drum.setAttribute('transform', `rotate(${angle.toFixed(1)} 60 60)`);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  });
+
   // Ring
   const R = 46, C = 2 * Math.PI * R;
   const uid = Math.random().toString(36).slice(2, 8);
@@ -103,7 +123,7 @@
         {:else}
           <circle cx="60" cy="60" r="34" class="door" />
           <clipPath id="clip{uid}"><circle cx="60" cy="60" r="32" /></clipPath>
-          <g clip-path="url(#clip{uid})">{#if kind === 'washer' && active}<path d="M20 66 Q32 60 44 66 T68 66 T92 66 T116 66 L116 100 L20 100Z" class="water" class:wave={running} />{/if}<g class="drum" class:spin={running} class:fast={spinning}>
+          <g clip-path="url(#clip{uid})">{#if kind === 'washer' && active}<path d="M20 66 Q32 60 44 66 T68 66 T92 66 T116 66 L116 100 L20 100Z" class="water" class:wave={running} />{/if}<g class="drum" bind:this={drum}>
             <circle cx="48" cy="70" r="7" class="cloth c1" /><circle cx="66" cy="74" r="8" class="cloth c2" /><circle cx="58" cy="48" r="6" class="cloth c3" />
           </g></g>
           <circle cx="60" cy="60" r="34" class="glass" />
@@ -167,10 +187,6 @@
   .arc { fill: none; stroke: var(--k); stroke-width: 7; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 60px 60px; transition: stroke-dashoffset 1s; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--k) 60%, transparent)); }
   .door { fill: #1d2230; stroke: #4a5263; stroke-width: 3; }
   .glass { fill: rgba(255,255,255,.06); stroke: rgba(255,255,255,.15); stroke-width: 1; pointer-events: none; }
-  .drum { transform-origin: 60px 60px; }
-  .drum.spin { animation: drum 3s linear infinite; }
-  .drum.fast { animation-duration: .5s; }
-  @keyframes drum { to { transform: rotate(360deg); } }
   .water { fill: rgba(79,180,255,.45); }
   .water.wave { animation: wave 2.4s ease-in-out infinite alternate; }
   @keyframes wave { to { transform: translateX(-24px); } }
@@ -195,7 +211,7 @@
   .chip.ok { background: rgba(91,216,143,.16); color: #5bd88f; }
   .prog { color: var(--muted); font-size: .85em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .left { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-  .left b { font-size: 1.9em; font-weight: 600; letter-spacing: -.02em; line-height: 1.05; }
+  .left b { font-size: 1.45em; font-weight: 600; letter-spacing: -.02em; line-height: 1.05; }
   .left span { color: var(--muted); font-size: .85em; }
   .left.dim span { font-size: .85em; }
   .bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; }

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.6
+
+- Fixed: on the heat pump card the heating zone could be pushed under the hot water button and cut off. On cards under about 560 px wide the hot water, Boost (now just its icon) and heating share one row in short form, and the graph shrinks to make room if they ever need two rows.
+
 ## 0.26.5
 
 - **Heat pump card: heating target.** The heating zone now shows its target as well as the current temperature (e.g. 17.9° → 20.0°), with − / + buttons beside it to change it.

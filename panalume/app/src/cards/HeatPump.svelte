@@ -38,7 +38,9 @@
   import { formatNumber } from '../lib/entity.js';
   import { useHistory } from '../lib/history.svelte.js';
   import { app } from '../lib/config.svelte.js';
-  let { props } = $props();
+  let { props, w = 420 } = $props();
+  // Under ~560px the hot water, Boost and heating share one row in short form.
+  const tight = $derived(w < 560);
   const show = (k) => !props.hide?.[k];
   const n = (id) => { const v = Number(ent(id)?.state); return isNaN(v) ? null : v; };
   const kw = (id) => { const e = ent(id); const v = n(id); if (v == null) return null; return (e.attributes.unit_of_measurement || '').toLowerCase() === 'w' ? v / 1000 : v; };
@@ -79,17 +81,17 @@
   {#if show('chart')}<div class="chart">
     <Chart series={[{ points: hist.series[props.heat_out] || [], color: '#ff8a4c' }, { points: hist.series[props.power_in] || [], color: '#7aa2ff' }]} hours={24} strokeWidth={1.8} />
   </div>{/if}
-  <div class="row" data-stop>
+  <div class="row" class:tight data-stop>
     {#if wh && show('water')}
       <button class="wh" onclick={() => (app.popup = { entity: wh.entity_id })}>
         <Icon icon="mdi:water-boiler" size="1.3em" />
-        <span><b>{formatNumber(wh.attributes.current_temperature, 1)}°</b>{#if (wh.attributes.temperature ?? wh.attributes.target_temp_high) != null}{' / '}{formatNumber(wh.attributes.temperature ?? wh.attributes.target_temp_high, 0)}°{/if} <span class="dim">{(wh.attributes.operation_mode || wh.state).replace(/_/g, ' ')}</span></span>
+        <span><b>{formatNumber(wh.attributes.current_temperature, 1)}°</b>{#if (wh.attributes.temperature ?? wh.attributes.target_temp_high) != null}{' / '}{formatNumber(wh.attributes.temperature ?? wh.attributes.target_temp_high, 0)}°{/if}{#if !tight}{' '}<span class="dim">{(wh.attributes.operation_mode || wh.state).replace(/_/g, ' ')}</span>{/if}</span>
       </button>
-      {#if show('boost')}<button class="boost" onclick={boost}><Icon icon="mdi:rocket-launch" size="1.1em" /> Boost</button>{/if}
+      {#if show('boost')}<button class="boost" title="Boost hot water" onclick={boost}><Icon icon="mdi:rocket-launch" size="1.1em" />{#if !tight}{' '}Boost{/if}</button>{/if}
     {/if}
     {#if zone && show('zone')}
       <div class="zone">
-        <button class="wh" onclick={() => (app.popup = { entity: zone.entity_id })}><Icon icon="mdi:radiator" size="1.3em" /><span><b>{formatNumber(za.current_temperature, 1)}°</b>{#if ztarget != null}{' → '}{formatNumber(ztarget, 1)}°{/if} <span class="dim">{za.hvac_action === 'heating' ? 'heating' : zone.state}</span></span></button>
+        <button class="wh" onclick={() => (app.popup = { entity: zone.entity_id })}><Icon icon="mdi:radiator" size="1.3em" /><span><b>{formatNumber(za.current_temperature, 1)}°</b>{#if ztarget != null}{tight ? '→' : ' → '}{formatNumber(ztarget, 1)}°{/if}{#if !tight}{' '}<span class="dim">{za.hvac_action === 'heating' ? 'heating' : zone.state}</span>{/if}</span></button>
         {#if ztarget != null && zone.state !== 'off'}
           <button class="nb" aria-label="Cooler" onclick={() => nudge(-1)}><Icon icon="mdi:minus" size="1.1em" /></button>
           <button class="nb" aria-label="Warmer" onclick={() => nudge(1)}><Icon icon="mdi:plus" size="1.1em" /></button>
@@ -115,10 +117,12 @@
   .kpis b { font-size: 1.2em; }
   .kpis span { font-size: .72em; color: var(--muted); }
   .heat b { color: #ff8a4c; }
-  .chart { flex: 1; min-height: 40px; }
+  .chart { flex: 1; min-height: 0; }
   .row { display: flex; gap: 6px; flex-wrap: wrap; }
   .row button { border: 0; border-radius: 12px; padding: 8px 12px; background: rgba(255,255,255,.07); color: inherit; display: flex; align-items: center; gap: 8px; font-size: .9em; }
   .zone { display: flex; gap: 4px; }
+  .row.tight button { padding: 8px 10px; gap: 6px; }
+  .row.tight .nb { width: 2.2em; padding: 0; }
   .row .nb { padding: 0; width: 2.4em; justify-content: center; }
   .boost { background: rgba(255,138,76,.25) !important; color: #ffb38a !important; font-weight: 600; }
 </style>

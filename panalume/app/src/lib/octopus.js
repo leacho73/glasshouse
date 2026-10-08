@@ -25,7 +25,7 @@ export function rates(...ids) {
       const s = ts(r.start);
       if (seen.has(s)) continue;
       seen.add(s);
-      out.push({ start: s, end: ts(r.end), value: r.value_inc_vat });
+      out.push({ start: s, end: ts(r.end), value: r.value_inc_vat, ...(r.is_intelligent_adjusted ? { adjusted: true } : {}) });
     }
   }
   return out.sort((a, b) => a.start - b.start);

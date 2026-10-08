@@ -30,6 +30,7 @@
       { key: 'saving', label: 'Saving session events', type: 'entity', domain: 'event' },
       { key: 'powerup', label: 'Power-up events', type: 'entity', domain: 'event' },
       { key: 'free', label: 'Free electricity events', type: 'entity', domain: 'event' },
+      { key: 'cap_hours', label: 'Cheap dispatch hours a day (Intelligent Octopus Go: 6)', type: 'number' },
       { key: 'cheap', label: 'Cheap below (p)', type: 'number' },
       { key: 'peak', label: 'Peak from (p)', type: 'number' },
     ],
@@ -46,7 +47,31 @@
   let w = $state(500), h = $state(150);
 
   const th = $derived({ cheap: (Number(props.cheap) || 10) / 100, peak: (Number(props.peak) || 25) / 100 });
-  const raw = $derived(rates(props.prev_rates, props.rates, props.next_rates));
+  // Intelligent Octopus prices a dispatch's half-hours at the off-peak rate, but
+  // the integration only marks them a while after they're planned, often not
+  // before they start. Apply planned and running dispatches here straight away.
+  const raw = $derived.by(() => {
+    const list = rates(props.prev_rates, props.rates, props.next_rates);
+    if (!props.dispatching || !list.length) return list;
+    const d = dispatches(props.dispatching);
+    const periods = merge([...d.planned, ...d.completed]);
+    if (!periods.length) return list;
+    // The rate Octopus gives slots it has already adjusted, else the cheapest.
+    const off = list.find((r) => r.adjusted)?.value ?? Math.min(...list.map((r) => r.value).filter((v) => v > 0));
+    // Only the first 6 hours of dispatches between middays are cheap (as on the
+    // Zappi card); after that a dispatch outside the off-peak window costs the
+    // normal rate, so that's what's shown.
+    const capMs = (Number(props.cap_hours) || 6) * 36e5;
+    const used = new Map();
+    const midday = (t) => { const d = new Date(t); if (d.getHours() < 12) d.setDate(d.getDate() - 1); d.setHours(12, 0, 0, 0); return +d; };
+    return list.map((r) => {
+      const ms = periods.reduce((a, q) => a + Math.max(0, Math.min(q.end, r.end) - Math.max(q.start, r.start)), 0);
+      if (!ms) return r;
+      const k = midday(r.start), u = used.get(k) || 0;
+      used.set(k, u + ms);
+      return r.value > off && u + ms <= capMs ? { ...r, value: off } : r;
+    });
+  });
   // Octoplus sessions change what electricity really costs: Free Electricity and
   // joined Power Ups make it free; in a joined Saving Session every kWh you use
   // also costs the reward you'd have earned (800 Octopoints = £1).

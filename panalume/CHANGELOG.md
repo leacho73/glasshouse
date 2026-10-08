@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.7
+
+- **Electricity price card: Intelligent dispatches priced straight away.** The Octopus integration only marks a dispatch's half-hours as cheap a while after they're planned, so the card could say "6.6p from 12:30" when the dispatch (and the cheap rate) started at 12:00. The card now prices planned and running dispatches at your off-peak rate itself. Only the first 6 hours of dispatches between middays count as cheap, as Octopus bills it; beyond that a dispatch outside the off-peak window shows the normal rate. The 6 hours can be changed in the card's settings.
+
 ## 0.26.6
 
 - Fixed: on the heat pump card the heating zone could be pushed under the hot water button and cut off. On cards under about 560 px wide the hot water, Boost (now just its icon) and heating share one row in short form, and the graph shrinks to make room if they ever need two rows.

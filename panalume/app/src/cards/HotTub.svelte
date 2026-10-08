@@ -142,7 +142,83 @@
   const narrow = $derived(w < 420);
   const tubSize = $derived(Math.max(80, narrow ? Math.min(w * 0.6, h * 0.34, 200) : Math.min(h - 150, w * 0.48, 200)));
   const uid = Math.random().toString(36).slice(2, 8);
+  // Short cards: a small tub beside the name, target and icon-only buttons.
+  // (The full layout needs about 300px, or 460px once it stacks on a narrow card.)
+  const compact = $derived(h < 300 || (narrow && h < 460));
+  const miniSize = $derived(Math.max(56, Math.min(h - 8, w * 0.36, 170)));
+  const miniBtns = $derived(h >= 125);
 </script>
+
+{#snippet tubPic(size)}
+  <div class="pic" style="width:{size}px;height:{size}px">
+    <svg viewBox="0 0 200 200">
+      <defs>
+        <radialGradient id="w{uid}" cx="50%" cy="45%" r="65%"><stop offset="0" style="stop-color:{water.a}" /><stop offset="1" style="stop-color:{water.b}" /></radialGradient>
+        <radialGradient id="g{uid}" cx="50%" cy="50%" r="50%"><stop offset=".6" stop-color="#7fe8ff" stop-opacity="0" /><stop offset="1" stop-color="#7fe8ff" stop-opacity=".55" /></radialGradient>
+      </defs>
+      {#if lit}<rect x="0" y="0" width="200" height="200" rx="46" fill="url(#g{uid})" class="glow" />{/if}
+      <rect x="10" y="10" width="180" height="180" rx="40" style="fill:#3a3f4c;stroke:#555c6b;stroke-width:2" />
+      <rect x="24" y="24" width="152" height="152" rx="30" fill="url(#w{uid})" />
+      <!-- seats -->
+      <rect x="24" y="24" width="152" height="30" rx="14" style="fill:rgba(255,255,255,.08)" />
+      <rect x="24" y="146" width="152" height="30" rx="14" style="fill:rgba(255,255,255,.08)" />
+      <!-- ripples -->
+      <ellipse cx="100" cy="100" rx="46" ry="30" class="ripple" class:fast={bubbling} />
+      <ellipse cx="100" cy="100" rx="46" ry="30" class="ripple r2" class:fast={bubbling} />
+      {#if bubbling}
+        {#each [[60, 80, 0], [140, 90, .4], [80, 130, .8], [125, 125, 1.2], [100, 70, 1.6], [70, 110, .2], [130, 70, 1]] as [x, y, d]}
+          <circle cx={x} cy={y} r="5" class="bub" style="animation-delay:{d}s" />
+        {/each}
+      {/if}
+      {#if heating}
+        {#each [70, 100, 130] as x, i}<path d="M{x} 70 q -8 -14 0 -26 q 8 -12 0 -24" class="steam" style="animation-delay:{i * .6}s" />{/each}
+      {/if}
+    </svg>
+    <div class="temp" style="font-size:{Math.min(1, size / 150)}em"><b>{Number.isFinite(cur) ? cur.toFixed(1) : '—'}°</b>{#if Number.isFinite(target) && size >= 90}<small>{heating ? '→' : 'set'} {shown.toFixed(1)}°</small>{/if}</div>
+  </div>
+{/snippet}
+
+{#if compact}
+<div class="tub mini" class:dim={standby || offline}>
+  {#if show('tub')}{@render tubPic(miniSize)}{/if}
+  <div class="mside">
+    <div class="tt">
+      <div class="name"><span class="mic" class:hot={heating}><Icon icon="mdi:hot-tub" size="1em" /></span>{t(props.name) || heater?.attributes.friendly_name || 'Hot tub'}</div>
+      {#if show('status')}<div class="st" class:bad={offline || err} class:hot={heating}>{status}{#if !show('tub') && Number.isFinite(cur)}{' · '}{cur.toFixed(1)}°{/if}</div>{/if}
+    </div>
+    {#if show('target') && Number.isFinite(target)}
+      <div class="tg" data-stop>
+        <button aria-label="Cooler" onclick={() => setTarget(shown - step)}><Icon icon="mdi:minus" size="1.1em" /></button>
+        <div class="tv"><b>{shown.toFixed(1)}°</b>{#if h >= 110}<span>target</span>{/if}</div>
+        <button aria-label="Warmer" onclick={() => setTarget(shown + step)}><Icon icon="mdi:plus" size="1.1em" /></button>
+      </div>
+    {/if}
+    {#if miniBtns && ((show('pumps') && (pumps.length || props.light)) || (show('switches') && (props.economy || props.standby)))}
+      <div class="mbtns" data-stop>
+        {#if show('pumps')}
+          {#each [[props.pump1, 'Pump 1'], [props.pump2, 'Pump 2'], [props.blower, 'Blower']].filter(([id]) => id && ent(id)) as [id, fb]}
+            <button class:on={pumpOn(id)} style="--k:#4fb4ff" title="{nice(id, fb)}: {pumpLabel(id)}" onclick={() => cycle(id)}><Icon icon="mdi:pump" size="1.1em" /></button>
+          {/each}
+          {#if props.light && ent(props.light)}
+            <button class:on={lit} style="--k:#7fe8ff" title="Light: {lit ? 'On' : 'Off'}" onclick={() => callService(props.light.split('.')[0], 'toggle', {}, { entity_id: props.light })}><Icon icon={lit ? 'mdi:lightbulb-on' : 'mdi:lightbulb-outline'} size="1.1em" /></button>
+          {/if}
+        {/if}
+        {#if show('switches')}
+          {#each [[props.economy, 'Economy', 'mdi:leaf', '#5bd88f'], [props.standby, 'Standby', 'mdi:power-sleep', '#ffc861']].filter(([id]) => id && ent(id)) as [id, label, icon, c]}
+            <button class:on={on(id)} style="--k:{c}" title="{label}: {on(id) ? 'On' : 'Off'}" onclick={() => callService('switch', 'toggle', {}, { entity_id: id })}><Icon {icon} size="1.1em" /></button>
+          {/each}
+        {/if}
+      </div>
+    {/if}
+    {#if h >= 200 && show('lights') && leds.length}
+      <div class="leds">{#each leds as [label, id, icon, c]}<span class:on={on(id)} style="--k:{c}" title={label}><Icon {icon} size="1em" />{label}</span>{/each}</div>
+    {/if}
+    {#if h >= 260 && show('maintenance') && due.length}
+      <div class="due">{#each due as d}<div class={d.level}><Icon icon={d.level === 'bad' ? 'mdi:alert-circle' : 'mdi:calendar-clock'} size="1em" /><span>{d.label}</span><em>{d.text}</em></div>{/each}</div>
+    {/if}
+  </div>
+</div>
+{:else}
 
 <div class="tub" class:narrow class:dim={standby || offline}>
   <div class="head">
@@ -160,33 +236,7 @@
   </div>
 
   <div class="main">
-    {#if show('tub')}
-      <div class="pic" style="width:{tubSize}px;height:{tubSize}px">
-        <svg viewBox="0 0 200 200">
-          <defs>
-            <radialGradient id="w{uid}" cx="50%" cy="45%" r="65%"><stop offset="0" style="stop-color:{water.a}" /><stop offset="1" style="stop-color:{water.b}" /></radialGradient>
-            <radialGradient id="g{uid}" cx="50%" cy="50%" r="50%"><stop offset=".6" stop-color="#7fe8ff" stop-opacity="0" /><stop offset="1" stop-color="#7fe8ff" stop-opacity=".55" /></radialGradient>
-          </defs>
-          {#if lit}<rect x="0" y="0" width="200" height="200" rx="46" fill="url(#g{uid})" class="glow" />{/if}
-          <rect x="10" y="10" width="180" height="180" rx="40" style="fill:#3a3f4c;stroke:#555c6b;stroke-width:2" />
-          <rect x="24" y="24" width="152" height="152" rx="30" fill="url(#w{uid})" />
-          <!-- seats -->
-          <rect x="24" y="24" width="152" height="30" rx="14" style="fill:rgba(255,255,255,.08)" />
-          <rect x="24" y="146" width="152" height="30" rx="14" style="fill:rgba(255,255,255,.08)" />
-          <!-- ripples -->
-          <ellipse cx="100" cy="100" rx="46" ry="30" class="ripple" class:fast={bubbling} />
-          <ellipse cx="100" cy="100" rx="46" ry="30" class="ripple r2" class:fast={bubbling} />
-          {#if bubbling}
-            {#each [[60, 80, 0], [140, 90, .4], [80, 130, .8], [125, 125, 1.2], [100, 70, 1.6], [70, 110, .2], [130, 70, 1]] as [x, y, d]}
-              <circle cx={x} cy={y} r="5" class="bub" style="animation-delay:{d}s" />
-            {/each}
-          {/if}
-          {#if heating}
-            {#each [70, 100, 130] as x, i}<path d="M{x} 70 q -8 -14 0 -26 q 8 -12 0 -24" class="steam" style="animation-delay:{i * .6}s" />{/each}
-          {/if}
-        </svg>
-        <div class="temp"><b>{Number.isFinite(cur) ? cur.toFixed(1) : '—'}°</b>{#if Number.isFinite(target)}<small>{heating ? '→' : 'set'} {shown.toFixed(1)}°</small>{/if}</div>
-      </div>
+    {#if show('tub')}{@render tubPic(tubSize)}
     {/if}
 
     <div class="side">
@@ -232,6 +282,7 @@
     </div>
   {/if}
 </div>
+{/if}
 
 <style>
   .tub { height: 100%; display: flex; flex-direction: column; gap: 10px; }
@@ -283,6 +334,21 @@
   .due .warn em, .due .warn :global(svg) { color: #ffc861; }
   .due .bad em, .due .bad :global(svg) { color: #ff7a90; }
   .graph { height: 50px; flex: none; }
+  .mini { flex-direction: row; align-items: center; gap: 14px; }
+  .mside { flex: 1; min-width: 0; max-height: 100%; overflow: hidden; display: flex; flex-direction: column; gap: 6px; justify-content: center; }
+  .mini .leds { max-height: calc(.9em + 6px); overflow: hidden; }
+  .mini .due span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mini .due em { white-space: nowrap; }
+  .mini .name { display: flex; align-items: center; gap: 6px; }
+  .mic { color: #7fd0ff; display: inline-flex; flex: none; }
+  .mic.hot { color: #ff9a57; }
+  .mini .tg { gap: 6px; }
+  .mini .tg button { width: 2.1em; height: 2.1em; }
+  .mini .tv b { font-size: 1.2em; }
+  .mbtns { display: flex; gap: 5px; }
+  .mbtns button { flex: 1 1 0; min-width: 0; height: 2.1em; display: flex; align-items: center; justify-content: center; gap: 3px; border-radius: 10px; border: 0; background: rgba(255,255,255,.06); color: var(--muted); font: inherit; font-size: .85em; }
+  .mbtns button.on { background: color-mix(in srgb, var(--k) 22%, transparent); color: var(--k); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k) 60%, transparent); }
+  .mbtns button:active { transform: scale(.95); }
   .btns { display: flex; gap: 6px; }
   .btns button { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 7px 4px; border-radius: 12px; border: 0; background: rgba(255,255,255,.06); color: var(--muted); font: inherit; font-size: .82em; }
   .btns button span { color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }

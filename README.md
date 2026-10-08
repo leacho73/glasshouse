@@ -64,7 +64,7 @@ Built for the [Octopus Energy](https://github.com/BottlecapDave/HomeAssistant-Oc
 ## Around the house
 
 <table><tr>
-<td width="50%"><img src="docs/screenshots/hottub.webp" alt="Hot tub card"><br><sub><b>Hot tub</b>: water that warms in colour, bubbles with the pumps and steams while heating; target − / +, pumps, light, WaterCare mode, status lights and filter / water-change reminders (Gecko spas detected automatically).</sub><br><br>
+<td width="50%"><img src="docs/screenshots/hottub.webp" alt="Hot tub card"><br><sub><b>Hot tub</b>: water that warms in colour, bubbles with the pumps and steams while heating; target − / +, pumps, light, WaterCare mode, status lights and filter / water-change reminders, and a compact layout for short spaces (Gecko spas detected automatically).</sub><br><br>
 <img src="docs/screenshots/dryer.webp" alt="Tumble dryer card"><br><sub><b>Tumble dryer</b>: a drum that tumbles, programme, time left and finish time, dry level.</sub></td>
 <td width="50%"><img src="docs/screenshots/washer.webp" alt="Washing machine card"><br><sub><b>Washing machine</b>: a drum that turns (fast on the spin), time left and finish time, phase, spin and temperature, leak sensor, Pause / Stop.</sub><br><br>
 <img src="docs/screenshots/dishwasher.webp" alt="Dishwasher card"><br><sub><b>Dishwasher</b>: programme, progress, time left, salt / rinse aid low.</sub></td>

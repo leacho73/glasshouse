@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.26.4
+
+- **Hot tub card shrinks down.** Make it short (under about 300 px) and it switches to a compact layout: a smaller tub showing the water temperature, with the name, status, target − / + and a row of icon buttons for the pumps, light, economy and standby beside it. As it gets taller the status lights and filter reminders come back; at its smallest it keeps the tub, name, status and target.
+- Fixed: at medium sizes (e.g. 400 × 270) the hot tub card's controls overlapped each other; it now uses the compact layout until there's room for the full one.
+
 ## 0.26.3
 
 - **Washer and dryer: smoother drum.** The drum turns steadily without jumping back to the start, and speeds up and slows down smoothly when the washer goes into or out of its spin.

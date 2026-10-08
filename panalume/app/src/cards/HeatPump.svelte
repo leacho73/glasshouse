@@ -48,6 +48,16 @@
   const wh = $derived(ent(props.water));
   const zone = $derived(ent(props.zone));
   const hist = useHistory(() => [props.power_in, props.heat_out].filter(Boolean), () => 24);
+  // Heating zone target: − / + nudge it, sent once you stop tapping.
+  const za = $derived(zone?.attributes || {});
+  const zstep = $derived(Number(za.target_temp_step) || 0.5);
+  let pending = $state(null), timer;
+  const ztarget = $derived(pending ?? (za.temperature != null ? Number(za.temperature) : null));
+  function nudge(d) {
+    pending = Math.min(za.max_temp ?? 30, Math.max(za.min_temp ?? 7, Math.round((ztarget + d * zstep) / zstep) * zstep));
+    clearTimeout(timer);
+    timer = setTimeout(() => callService('climate', 'set_temperature', { temperature: pending }, { entity_id: zone.entity_id }).finally(() => setTimeout(() => (pending = null), 1500)), 900);
+  }
   const boost = () => {
     const m = Number(props.boost_minutes) || 60;
     callService('octopus_energy', 'boost_water_heater', { hours: Math.floor(m / 60), minutes: m % 60, target_temperature: wh?.attributes.max_temp ?? 60 }, { entity_id: wh.entity_id });
@@ -63,7 +73,7 @@
   <div class="kpis">
     {#if show('power')}<div><b>{pin != null ? pin.toFixed(2) : '—'}</b><span>kW in</span></div>{/if}
     {#if show('heat')}<div class="heat"><b>{hout != null ? hout.toFixed(2) : '—'}</b><span>kW heat</span></div>{/if}
-    {#if props.flow && show('flow')}<div><b>{formatNumber(n(props.flow), 0)}°</b><span>flow</span></div>{/if}
+    {#if props.flow && show('flow')}<div><b>{formatNumber(n(props.flow), 0)}°</b><span>{props.flow.includes('target') ? 'target flow' : 'flow'}</span></div>{/if}
     {#if props.scop && show('scop')}<div><b>{n(props.scop)?.toFixed(2) ?? '—'}</b><span>SCOP</span></div>{/if}
   </div>
   {#if show('chart')}<div class="chart">
@@ -78,7 +88,13 @@
       {#if show('boost')}<button class="boost" onclick={boost}><Icon icon="mdi:rocket-launch" size="1.1em" /> Boost</button>{/if}
     {/if}
     {#if zone && show('zone')}
-      <button class="wh" onclick={() => (app.popup = { entity: zone.entity_id })}><Icon icon="mdi:radiator" size="1.3em" /><span><b>{formatNumber(zone.attributes.current_temperature, 1)}°</b> <span class="dim">{zone.state}</span></span></button>
+      <div class="zone">
+        <button class="wh" onclick={() => (app.popup = { entity: zone.entity_id })}><Icon icon="mdi:radiator" size="1.3em" /><span><b>{formatNumber(za.current_temperature, 1)}°</b>{#if ztarget != null}{' → '}{formatNumber(ztarget, 1)}°{/if} <span class="dim">{za.hvac_action === 'heating' ? 'heating' : zone.state}</span></span></button>
+        {#if ztarget != null && zone.state !== 'off'}
+          <button class="nb" aria-label="Cooler" onclick={() => nudge(-1)}><Icon icon="mdi:minus" size="1.1em" /></button>
+          <button class="nb" aria-label="Warmer" onclick={() => nudge(1)}><Icon icon="mdi:plus" size="1.1em" /></button>
+        {/if}
+      </div>
     {/if}
   </div>
 </div>
@@ -102,5 +118,7 @@
   .chart { flex: 1; min-height: 40px; }
   .row { display: flex; gap: 6px; flex-wrap: wrap; }
   .row button { border: 0; border-radius: 12px; padding: 8px 12px; background: rgba(255,255,255,.07); color: inherit; display: flex; align-items: center; gap: 8px; font-size: .9em; }
+  .zone { display: flex; gap: 4px; }
+  .row .nb { padding: 0; width: 2.4em; justify-content: center; }
   .boost { background: rgba(255,138,76,.25) !important; color: #ffb38a !important; font-weight: 600; }
 </style>

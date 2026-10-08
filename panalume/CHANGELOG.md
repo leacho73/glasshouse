@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.26.5
+
+- **Heat pump card: heating target.** The heating zone now shows its target as well as the current temperature (e.g. 17.9° → 20.0°), with − / + buttons beside it to change it.
+- The heat pump's "flow" figure is labelled **target flow**, as that's what the Octopus sensor is.
+
 ## 0.26.4
 
 - **Hot tub card shrinks down.** Make it short (under about 300 px) and it switches to a compact layout: a smaller tub showing the water temperature, with the name, status, target − / + and a row of icon buttons for the pumps, light, economy and standby beside it. As it gets taller the status lights and filter reminders come back; at its smallest it keeps the tub, name, status and target.

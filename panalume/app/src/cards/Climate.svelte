@@ -44,6 +44,12 @@
   const MODE = { off: ['mdi:power', 'Off'], heat: ['mdi:fire', 'Heat'], cool: ['mdi:snowflake', 'Cool'], auto: ['mdi:thermostat-auto', 'Auto'], heat_cool: ['mdi:sun-snowflake-variant', 'Heat/Cool'], dry: ['mdi:water-percent', 'Dry'], fan_only: ['mdi:fan', 'Fan'], eco: ['mdi:leaf', 'Eco'], heat_pump: ['mdi:heat-pump', 'Heat pump'], electric: ['mdi:flash', 'Electric'], performance: ['mdi:rocket-launch', 'Boost'], high_demand: ['mdi:rocket-launch', 'High demand'], gas: ['mdi:fire', 'Gas'] };
   const ACTION = { heating: ['mdi:fire', 'Heating'], preheating: ['mdi:fire', 'Pre-heating'], cooling: ['mdi:snowflake', 'Cooling'], drying: ['mdi:water-percent', 'Drying'], fan: ['mdi:fan', 'Fan'], idle: ['mdi:pause-circle-outline', 'Idle'], off: ['mdi:power', 'Off'] };
   const label = (m) => MODE[m]?.[1] || m.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
+  // Some units don't say what they're doing, only
+  // their mode (e.g. Tuya air conditioners, Hive and other hot water): show the
+  // mode then, rather than claiming they're idle.
+  const actView = $derived(!a.hvac_action && !off && mode
+    ? [MODE[mode]?.[0] || 'mdi:thermostat', label(mode)]
+    : [ACTION[action]?.[0] || 'mdi:thermostat', ACTION[action]?.[1] || action]);
 
   // Pending target while adjusting; sent after a short pause.
   let pending = $state(null);
@@ -129,7 +135,7 @@
           {/if}
         </svg>
         <div class="centre">
-          {#if show('action')}<div class="act" class:pulse={action === 'heating' || action === 'cooling'}><Icon icon={ACTION[action]?.[0] || 'mdi:thermostat'} size="1em" /> {ACTION[action]?.[1] || action}</div>{/if}
+          {#if show('action')}<div class="act" class:pulse={action === 'heating' || action === 'cooling'}><Icon icon={actView[0]} size="1em" /> {actView[1]}</div>{/if}
           {#if !off && shown == null && cur != null}
             <!-- No settable target (e.g. some water heaters): show the current temperature big. -->
             <div class="tgt">{formatNumber(cur, 1)}<small>{unit}</small></div>
@@ -144,7 +150,7 @@
       <div class="row" data-stop>
         {#if !off && shown != null}<button class="rb" onclick={() => setTarget((pending ?? target) - step)} aria-label="Lower"><Icon icon="mdi:minus" size="1.3em" /></button>{/if}
         <div class="rc">
-          {#if show('action')}<div class="act" class:pulse={action === 'heating' || action === 'cooling'}><Icon icon={ACTION[action]?.[0] || 'mdi:thermostat'} size="1em" /> {ACTION[action]?.[1] || action}</div>{/if}
+          {#if show('action')}<div class="act" class:pulse={action === 'heating' || action === 'cooling'}><Icon icon={actView[0]} size="1em" /> {actView[1]}</div>{/if}
           <div class="tgt" class:pending={pending != null}>{off ? 'Off' : shown != null ? formatNumber(shown, step < 1 ? 1 : 0) : cur != null ? formatNumber(cur, 1) : '—'}{#if !off && (shown ?? cur) != null}<small>{unit}</small>{/if}</div>
           {#if show('current') && cur != null && shown != null}<div class="now">Now {formatNumber(cur, 1)}{unit}</div>{/if}
         </div>

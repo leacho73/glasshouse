@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.27.5
+
+- **Thermostat card: no more "Idle" for units that don't say what they're doing.** Some units (e.g. Tuya air conditioners, and most water heaters) only report their mode, not whether they're heating or cooling right now, and the card showed them as Idle. It now shows their mode instead (Heat, Cool, Dry…).
+
 ## 0.27.4
 
 - **Sliders show the value while you drag.** The Intelligent Octopus charge target now updates its "Charge target 80%" as you move it, and every slider (charge target, light brightness, volume, blind position, Number card) shows the value it's at in a small tag at the end of the fill until you let go.

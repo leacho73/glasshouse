@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.27.1
+
+- **Power flow card: two solar arrays and two batteries.** Fill in **Second solar power** or **Second battery power** (with its own invert and battery %) and they're drawn side by side, each with its own figure and flow line to the house. Each can have a label (e.g. Pylontech / Powerwall); the calculated home power includes both. Cards with one of each look as before.
+
 ## 0.27.0
 
 - **Camera card plays video for cameras whose pictures fail.** Some cameras (e.g. Tapo) can't give Home Assistant a still picture in time, so the card stayed black with a broken-image icon. If a camera's pictures fail twice, or live mode gets nothing for 12 seconds, and the camera can stream, the card now plays Home Assistant's video stream instead, the way HA's own dashboard does ("Starting video…" while it starts). **Mode → Video stream** always uses it.

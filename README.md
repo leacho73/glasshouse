@@ -40,7 +40,7 @@ First-class cards for UK energy setups, with entities **auto-detected** when you
 | **Energy cost today** | Cost, kWh, average p/kWh, export, solar, yesterday, peak/off-peak split, half-hourly usage coloured by rate |
 | **Solar** | Generating now, today's curve against the Solcast forecast, above / below forecast, where it's going, tomorrow and the week ahead |
 | **Energy flow** | Self-powered %, solar / battery / house figures and a live flow chart of every route power is taking |
-| **Power flow** | Solar, grid, battery, home and EV with animated flows |
+| **Power flow** | Solar, grid, battery, home and EV with animated flows (up to two solar arrays and two batteries) |
 | **Home battery** | Charge %, kWh left, charge / discharge power, time to full or to reserve, health, today in / out (SolarEdge auto-detected) |
 | **Predbat** | What Predbat is doing, the 24-hour charge / export plan with predicted battery %, costs and savings, Charge / Export / Hold now |
 | **Heat pump** | Live COP / SCOP, power in and heat out, flow and outdoor temperature, hot water with Boost |

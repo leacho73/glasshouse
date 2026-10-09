@@ -11,6 +11,14 @@
       { key: 'battery', label: 'Battery power (+discharge / −charge)', type: 'entity', domain: 'sensor' },
       { key: 'battery_invert', label: 'Invert battery sign', type: 'bool', section: 'battery' },
       { key: 'battery_soc', label: 'Battery %', type: 'entity', domain: 'sensor', section: 'battery' },
+      { key: 'solar_2', label: 'Second solar power (optional)', type: 'entity', domain: 'sensor', section: 'solar' },
+      { key: 'solar_label', label: 'Solar label', type: 'text', section: 'solar' },
+      { key: 'solar_2_label', label: 'Second solar label', type: 'text', section: 'solar' },
+      { key: 'battery_2', label: 'Second battery power (optional)', type: 'entity', domain: 'sensor', section: 'battery' },
+      { key: 'battery_2_invert', label: 'Invert second battery sign', type: 'bool', section: 'battery' },
+      { key: 'battery_2_soc', label: 'Second battery %', type: 'entity', domain: 'sensor', section: 'battery' },
+      { key: 'battery_label', label: 'Battery label', type: 'text', section: 'battery' },
+      { key: 'battery_2_label', label: 'Second battery label', type: 'text', section: 'battery' },
       { key: 'home', label: 'Home power (blank = calculated)', type: 'entity', domain: 'sensor' },
       { key: 'ev', label: 'EV / charger power', type: 'entity', domain: 'sensor' },
       { key: 'ev_label', label: 'EV label', type: 'text', section: 'ev' },
@@ -32,21 +40,32 @@
     const u = (e.attributes.unit_of_measurement || 'W').toLowerCase();
     return u === 'kw' ? v * 1000 : u === 'mw' ? v * 1e6 : v;
   }
-  const solar = $derived(Math.max(0, watts(props.solar) ?? 0));
+  // Up to two solar arrays and two batteries; with two, each gets its own circle.
+  const solars = $derived([['solar', props.solar, t(props.solar_label)], ['solar2', props.solar_2, t(props.solar_2_label)]]
+    .filter(([, id]) => id).map(([key, id, label], i, all) => ({ key, w: Math.max(0, watts(id) ?? 0), label: label || (all.length > 1 ? `Solar ${i + 1}` : 'Solar') })));
+  const batts = $derived([['batt', props.battery, props.battery_invert, props.battery_soc, t(props.battery_label)], ['batt2', props.battery_2, props.battery_2_invert, props.battery_2_soc, t(props.battery_2_label)]]
+    .filter(([, id]) => id).map(([key, id, inv, socId, label], i, all) => {
+      const soc = ent(socId)?.state;
+      return { key, w: (watts(id) ?? 0) * (inv ? -1 : 1), soc: soc != null && !isNaN(Number(soc)) ? Math.round(Number(soc)) + '%' : '', label: label || (all.length > 1 ? `Battery ${i + 1}` : '') };
+    }));
+  const solar = $derived(solars.reduce((a, x) => a + x.w, 0));
   const grid = $derived((watts(props.grid) ?? 0) * (props.grid_invert ? -1 : 1));
-  const batt = $derived((watts(props.battery) ?? 0) * (props.battery_invert ? -1 : 1));
+  const batt = $derived(batts.reduce((a, x) => a + x.w, 0));
   const ev = $derived(Math.max(0, watts(myenergiPower(props.ev)) ?? 0));
   const home = $derived(props.home ? (watts(props.home) ?? 0) : Math.max(0, solar + grid + batt - ev));
-  const soc = $derived(ent(props.battery_soc)?.state);
   const fmt = (w) => (Math.abs(w) >= 1000 ? (Math.abs(w) / 1000).toFixed(Math.abs(w) >= 10000 ? 0 : 1) + ' kW' : Math.round(Math.abs(w)) + ' W');
   const dur = (w) => Math.max(0.6, 3.5 - Math.log10(Math.max(1, Math.abs(w))) * 0.8) + 's';
   const C = { solar: '#ffc861', grid: '#8da2c0', home: '#7aa2ff', batt: '#5bd88f', ev: '#b48cff', exp: '#ff8fb1' };
-  // Node positions in a 100x100 box.
-  const P = { solar: [50, 13], grid: [13, 50], home: [50, 50], batt: [50, 87], ev: [87, 50] };
+  // Node positions in a 100x100 box; a second solar / battery sits beside the first.
+  const P = $derived({
+    solar: solars.length > 1 ? [34, 13] : [50, 13], solar2: [66, 13],
+    grid: [13, 50], home: [50, 50], ev: [87, 50],
+    batt: batts.length > 1 ? [34, 87] : [50, 87], batt2: [66, 87],
+  });
   const lines = $derived([
-    props.solar && show('solar') && { from: 'solar', to: 'home', w: solar, color: C.solar },
+    ...(show('solar') ? solars.map((x) => ({ from: x.key, to: 'home', w: x.w, color: C.solar })) : []),
     props.grid && show('grid') && { from: grid >= 0 ? 'grid' : 'home', to: grid >= 0 ? 'home' : 'grid', w: grid, color: grid >= 0 ? C.grid : C.exp, a: 'grid', b: 'home' },
-    props.battery && show('battery') && { from: batt >= 0 ? 'batt' : 'home', to: batt >= 0 ? 'home' : 'batt', w: batt, color: C.batt, a: 'batt', b: 'home' },
+    ...(show('battery') ? batts.map((x) => ({ from: x.w >= 0 ? x.key : 'home', to: x.w >= 0 ? 'home' : x.key, w: x.w, color: C.batt, a: x.key, b: 'home' })) : []),
     props.ev && show('ev') && { from: 'home', to: 'ev', w: ev, color: C.ev },
   ].filter(Boolean));
 </script>
@@ -70,10 +89,10 @@
       <span class="l">{label}</span>
     </div>
   {/snippet}
-  {#if props.solar && show('solar')}{@render node('solar', 'mdi:solar-power', 'Solar', solar, C.solar)}{/if}
+  {#if show('solar')}{#each solars as x (x.key)}{@render node(x.key, 'mdi:solar-power', x.label, x.w, C.solar)}{/each}{/if}
   {#if props.grid && show('grid')}{@render node('grid', 'mdi:transmission-tower', grid < 0 ? 'Export' : 'Grid', grid, grid < 0 ? C.exp : C.grid)}{/if}
   {#if show('home')}{@render node('home', 'mdi:home', 'Home', home, C.home)}{/if}
-  {#if props.battery && show('battery')}{@render node('batt', 'mdi:home-battery', batt < 0 ? 'Charging' : 'Battery', batt, C.batt, soc != null ? Math.round(soc) + '%' : '')}{/if}
+  {#if show('battery')}{#each batts as x (x.key)}{@render node(x.key, 'mdi:home-battery', x.label ? x.label : x.w < 0 ? 'Charging' : 'Battery', x.w, C.batt, x.soc)}{/each}{/if}
   {#if props.ev && show('ev')}{@render node('ev', 'mdi:car-electric', t(props.ev_label) || 'EV', ev, C.ev)}{/if}
 </div>
 

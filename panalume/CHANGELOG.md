@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.27.3
+
+- **Electric vehicle card: Skodas on MySkoda.** Cars from the MySkoda integration (Enyaq, Elroq…) are now recognised and filled in: battery, range, charging state, power, charge limit, *Charger connected*, lock, air conditioning and mileage. They also appear in the card's **Device** box, so you can switch between, say, a Skoda and a Renault.
+- "Ready for charging" and "conserving" no longer count as charging; they show as *Ready to charge* and *Holding charge*.
+
 ## 0.27.2
 
 - **Intelligent Octopus card: more than one car.** Add up to three cars' battery %, each with an optional plugged-in sensor (e.g. *Charger connected*). Only the car that's plugged in is shown, with its name; if two are plugged in both show. A car without a plugged-in sensor always shows, as before.

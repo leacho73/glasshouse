@@ -2,22 +2,30 @@
   import { states } from '../lib/ha.svelte.js';
   import { nameOf } from '../lib/device.js';
   // Fills in a car that isn't on another EV card yet. Volkswagen-group cars
-  // (Audi / VW / Skoda Connect: …_state_of_charge) and Renault / Dacia / Alpine
-  // (the Renault integration: …_battery + …_battery_autonomy).
+  // (Audi / VW / Skoda Connect: …_state_of_charge), Renault / Dacia / Alpine
+  // (the Renault integration: …_battery + …_battery_autonomy) and MySkoda.
   function cars() {
     const out = [];
     for (const id of states.keys()) {
       let m = /^sensor\.((?!octopus)[a-z0-9_]+)(?<!_target)_state_of_charge$/.exec(id);
-      if (m) out.push({ p: m[1], soc: id, renault: false });
+      if (m) out.push({ p: m[1], soc: id, make: 'vw' });
       m = /^sensor\.([a-z0-9_]+)_battery_autonomy$/.exec(id);
-      if (m && states.has(`sensor.${m[1]}_battery`)) out.push({ p: m[1], soc: `sensor.${m[1]}_battery`, renault: true });
+      if (m && states.has(`sensor.${m[1]}_battery`)) out.push({ p: m[1], soc: `sensor.${m[1]}_battery`, make: 'renault' });
+      // MySkoda (Enyaq, Elroq…): …_battery_percentage next to …_range or …_charger_connected.
+      m = /^sensor\.([a-z0-9_]+)_battery_percentage$/.exec(id);
+      if (m && (states.has(`sensor.${m[1]}_range`) || states.has(`binary_sensor.${m[1]}_charger_connected`))) out.push({ p: m[1], soc: id, make: 'skoda' });
     }
     return out;
   }
   function fill(car) {
     const has = (...ids) => ids.find((id) => states.has(id)) || '';
     const p = car.p;
-    const out = car.renault ? {
+    const out = car.make === 'skoda' ? {
+      soc: car.soc, range: has(`sensor.${p}_range`), charging: has(`sensor.${p}_charging_state`, `sensor.${p}_charging_status`, `sensor.${p}_charge_state`),
+      power: has(`sensor.${p}_charging_power`), target: has(`number.${p}_charge_limit`, `sensor.${p}_target_battery_percentage`),
+      remaining: has(`sensor.${p}_remaining_charging_time`, `sensor.${p}_charging_time_left`), plug: has(`binary_sensor.${p}_charger_connected`),
+      lock: has(`binary_sensor.${p}_locked`, `binary_sensor.${p}_doors_locked`, `lock.${p}_doors`), climate: has(`climate.${p}_air_conditioning`, `climate.${p}_climatisation`), mileage: has(`sensor.${p}_mileage`),
+    } : car.make === 'renault' ? {
       soc: car.soc, range: `sensor.${p}_battery_autonomy`, charging: has(`sensor.${p}_charge_state`),
       power: has(`sensor.${p}_charging_power`, `sensor.${p}_admissible_charging_power`), target: has(`number.${p}_target_charge_level`),
       remaining: has(`sensor.${p}_charging_remaining_time`), plug: has(`binary_sensor.${p}_plug`, `sensor.${p}_plug_state`),
@@ -75,7 +83,7 @@
   const show = (k) => !props.hide?.[k];
   const soc = $derived(Number(ent(props.soc)?.state));
   const tgt = $derived(Number(ent(props.target)?.state));
-  const charging = $derived(/charg/i.test(ent(props.charging)?.state || '') && !/not|complete|end|wait|error|stop|flap/i.test(ent(props.charging)?.state || ''));
+  const charging = $derived(/charg/i.test(ent(props.charging)?.state || '') && !/not|complete|end|wait|error|stop|flap|ready|conserv|idle/i.test(ent(props.charging)?.state || ''));
   const plug = $derived(ent(props.plug));
   const plugged = $derived(plug?.state === 'on' || /^plugged/i.test(plug?.state || ''));
   // Renault: climate is a "start air conditioner" button; its HVAC sensor says if it's running.
@@ -111,7 +119,7 @@
   const color = $derived(soc < 20 ? '#ff7a90' : soc < 50 ? '#ffc861' : '#5bd88f');
   const name = $derived(t(props.name) || nameOf([props.soc, props.range, props.mileage].filter((id) => id && states.has(id))) || 'EV');
   const R = 42, C = 2 * Math.PI * R;
-  const NICE = { not_in_charge: 'Not charging', charge_ended: 'Charge complete', waiting_for_a_planned_charge: 'Waiting for its charging schedule', waiting_for_current_charge: 'Waiting for power', charge_error: 'Charging error', energy_flap_opened: 'Charge flap open' };
+  const NICE = { not_in_charge: 'Not charging', charge_ended: 'Charge complete', waiting_for_a_planned_charge: 'Waiting for its charging schedule', waiting_for_current_charge: 'Waiting for power', charge_error: 'Charging error', energy_flap_opened: 'Charge flap open', ready_for_charging: 'Ready to charge', conserving: 'Holding charge' };
   const human = (s) => NICE[s] || (s || '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').toLowerCase().replace(/^./, (c) => c.toUpperCase());
 </script>
 

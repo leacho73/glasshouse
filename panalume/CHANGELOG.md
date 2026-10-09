@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.9
+
+- **Remove an entity from a card.** Every entity setting now has a **×** at its end to clear it, so that part of the card goes away. Before, you could only swap one entity for another.
+
 ## 0.26.8
 
 - **Home battery card: time remaining.** A capacity typed in as a number (e.g. 17.5) is now reduced by the battery's state of health when that's set, so the kWh available and the time to the reserve are closer to reality. If you have your own time-remaining sensor, set it as the new **Time remaining sensor** and the card shows that instead of its estimate.

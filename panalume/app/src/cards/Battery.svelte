@@ -22,10 +22,11 @@
     fields: [
       { key: 'name', label: 'Name', type: 'text' },
       { key: 'soc', label: 'State of charge (%)', type: 'entity', domain: 'sensor', section: 'gauge' },
-      { key: 'capacity', label: 'Usable capacity (kWh sensor) or a number', type: 'text', section: 'kwh' },
+      { key: 'capacity', label: 'Usable capacity (kWh sensor) or a number (a number is reduced by the state of health)', type: 'text', section: 'kwh' },
       { key: 'power', label: 'Battery power (W / kW)', type: 'entity', domain: 'sensor', section: 'power' },
       { key: 'power_invert', label: 'Invert power sign (tick if charging shows negative)', type: 'bool' },
       { key: 'reserve', label: 'Backup reserve % (for time-to-empty)', type: 'number', section: 'time' },
+      { key: 'runtime', label: 'Time remaining sensor (optional, h / min; replaces the estimate)', type: 'entity', domain: 'sensor', section: 'time' },
       { key: 'status', label: 'Status', type: 'entity', domain: 'sensor', section: 'status' },
       { key: 'health', label: 'State of health (%)', type: 'entity', domain: 'sensor', section: 'health' },
       { key: 'temp', label: 'Temperature', type: 'entity', domain: 'sensor', section: 'temp' },
@@ -52,7 +53,8 @@
   const capacity = $derived.by(() => {
     const c = props.capacity;
     if (c == null || c === '') return null;
-    if (!isNaN(Number(c))) return Number(c);
+    // A typed-in capacity is the battery when new: scale it by its health.
+    if (!isNaN(Number(c))) return Number(c) * Math.min(1, (num(props.health) ?? 100) / 100);
     const e = ent(c);
     const v = Number(e?.state);
     if (!Number.isFinite(v)) return null;
@@ -70,15 +72,25 @@
   const charging = $derived(!idle && watts > 0);
   const kwhLeft = $derived(soc != null && capacity != null ? (soc / 100) * capacity : null);
   const reserve = $derived(Number(props.reserve) || 0);
+  const clock = (mins) => new Date(Date.now() + mins * 60e3).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  const hm = (mins) => { const hh = Math.floor(mins / 60), mm = mins % 60; return hh ? `${hh}h ${mm}m` : `${mm}m`; };
+  // Your own time-remaining sensor, when there is one, in place of the estimate.
+  const own = $derived.by(() => {
+    const e = ent(props.runtime);
+    const v = Number(e?.state);
+    if (!e || !Number.isFinite(v) || v <= 0) return null;
+    const u = (e.attributes.unit_of_measurement || 'h').toLowerCase();
+    const mins = Math.round(u === 'min' ? v : u === 's' ? v / 60 : u === 'd' ? v * 1440 : v * 60);
+    return { text: hm(mins), at: clock(mins), label: charging ? 'remaining' : reserve ? `until ${reserve}%` : 'remaining' };
+  });
   const eta = $derived.by(() => {
+    if (props.runtime) return own;
     if (idle || soc == null || capacity == null) return null;
     const kw = Math.abs(watts) / 1000;
     const kwh = charging ? ((100 - soc) / 100) * capacity : ((soc - reserve) / 100) * capacity;
     if (kwh <= 0) return null;
     const mins = Math.round((kwh / kw) * 60);
-    const hh = Math.floor(mins / 60), mm = mins % 60;
-    const done = new Date(Date.now() + mins * 60e3).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-    return { text: hh ? `${hh}h ${mm}m` : `${mm}m`, at: done, label: charging ? 'until full' : reserve ? `until ${reserve}%` : 'until empty' };
+    return { text: hm(mins), at: clock(mins), label: charging ? 'until full' : reserve ? `until ${reserve}%` : 'until empty' };
   });
   const color = $derived(soc == null ? '#8a94a8' : soc <= Math.max(15, reserve) ? '#ff7a90' : soc < 40 ? '#ffc861' : '#5bd88f');
   const statusText = $derived.by(() => {

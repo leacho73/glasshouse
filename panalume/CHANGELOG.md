@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.8
+
+- **Home battery card: time remaining.** A capacity typed in as a number (e.g. 17.5) is now reduced by the battery's state of health when that's set, so the kWh available and the time to the reserve are closer to reality. If you have your own time-remaining sensor, set it as the new **Time remaining sensor** and the card shows that instead of its estimate.
+
 ## 0.26.7
 
 - **Electricity price card: Intelligent dispatches priced straight away.** The Octopus integration only marks a dispatch's half-hours as cheap a while after they're planned, so the card could say "6.6p from 12:30" when the dispatch (and the cheap rate) started at 12:00. The card now prices planned and running dispatches at your off-peak rate itself. Only the first 6 hours of dispatches between middays count as cheap, as Octopus bills it; beyond that a dispatch outside the off-peak window shows the normal rate. The 6 hours can be changed in the card's settings.

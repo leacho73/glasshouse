@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.27.2
+
+- **Intelligent Octopus card: more than one car.** Add up to three cars' battery %, each with an optional plugged-in sensor (e.g. *Charger connected*). Only the car that's plugged in is shown, with its name; if two are plugged in both show. A car without a plugged-in sensor always shows, as before.
+
 ## 0.27.1
 
 - **Power flow card: two solar arrays and two batteries.** Fill in **Second solar power** or **Second battery power** (with its own invert and battery %) and they're drawn side by side, each with its own figure and flow line to the house. Each can have a label (e.g. Pylontech / Powerwall); the calculated home power includes both. Cards with one of each look as before.

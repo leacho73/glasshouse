@@ -22,6 +22,11 @@
       { key: 'target', label: 'Charge target', type: 'entity', domain: 'number' },
       { key: 'ready_time', label: 'Ready-by time', type: 'entity', domain: 'select', section: 'ready' },
       { key: 'ev_soc', label: 'EV battery % (optional)', type: 'entity', domain: 'sensor', section: 'soc' },
+      { key: 'ev_plug', label: 'Its plugged-in sensor (optional: only shown while plugged in)', type: 'entity', domain: ['binary_sensor', 'sensor'], section: 'soc' },
+      { key: 'ev_soc_2', label: 'Second car battery %', type: 'entity', domain: 'sensor', section: 'soc' },
+      { key: 'ev_plug_2', label: 'Second car plugged-in sensor', type: 'entity', domain: ['binary_sensor', 'sensor'], section: 'soc' },
+      { key: 'ev_soc_3', label: 'Third car battery %', type: 'entity', domain: 'sensor', section: 'soc' },
+      { key: 'ev_plug_3', label: 'Third car plugged-in sensor', type: 'entity', domain: ['binary_sensor', 'sensor'], section: 'soc' },
     ],
   };
 </script>
@@ -52,7 +57,14 @@
   const bump = $derived(ent(props.bump_charge));
   const target = $derived(ent(props.target));
   const ready = $derived(ent(props.ready_time));
-  const soc = $derived(ent(props.ev_soc));
+  // Cars' battery %: a car with a plugged-in sensor only shows while it's
+  // plugged in, so with several cars you see the one on the charger.
+  const isPlugged = (e) => !!e && /^(on|true|yes|plugged|plugged_in|connected|charging)/i.test(e.state) && !/^(un|dis|not)/i.test(e.state);
+  const carName = (e) => (e.attributes.friendly_name || '').replace(/\s*(battery( level| percentage| state of charge)?|state of charge|soc|charge level)\s*$/i, '').trim();
+  const cars = $derived([[props.ev_soc, props.ev_plug], [props.ev_soc_2, props.ev_plug_2], [props.ev_soc_3, props.ev_plug_3]]
+    .map(([s, p]) => ({ e: ent(s), plug: p }))
+    .filter((c) => c.e && Number.isFinite(Number(c.e.state))));
+  const shownCars = $derived(cars.filter((c) => !c.plug || isPlugged(ent(c.plug))));
   const C = KIND.dispatch.color;
 </script>
 
@@ -63,7 +75,11 @@
       <div class="title">{t(props.title) || 'Intelligent Octopus'}</div>
       {#if show('status')}<div class="st">{active ? `Dispatching until ${hm(Date.parse(d.a.current_end))}` : planned.length ? `Next slot ${day(planned[0].start, now)} ${hm(planned[0].start)} (in ${until(planned[0].start, now)})` : st || 'No slots planned'}</div>{/if}
     </div>
-    {#if soc && show('soc')}<div class="soc">{Math.round(soc.state)}%</div>{/if}
+    {#if show('soc') && shownCars.length}
+      <div class="socs">
+        {#each shownCars as c (c.e.entity_id)}<div class="soc" class:sm={shownCars.length > 1}>{Math.round(Number(c.e.state))}%{#if cars.length > 1}<span>{carName(c.e)}</span>{/if}</div>{/each}
+      </div>
+    {/if}
   </div>
 
   {#if show('kpis')}<div class="kpis">
@@ -108,7 +124,10 @@
   .t { flex: 1; min-width: 0; }
   .title { font-weight: 600; }
   .st { color: var(--muted); font-size: .85em; text-transform: none; }
-  .soc { font-size: 1.4em; font-weight: 600; }
+  .socs { display: flex; gap: 12px; flex: none; }
+  .soc { font-size: 1.4em; font-weight: 600; display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; }
+  .soc.sm { font-size: 1.15em; }
+  .soc span { font-size: .5em; font-weight: 500; color: var(--muted); max-width: 7em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .kpis { display: flex; gap: 8px; }
   .kpis div { flex: 1; background: rgba(255,255,255,.05); border-radius: 12px; padding: 8px 10px; display: flex; flex-direction: column; }
   .kpis b { font-size: 1.3em; }

@@ -56,6 +56,8 @@
   const smart = $derived(ent(props.smart_charge));
   const bump = $derived(ent(props.bump_charge));
   const target = $derived(ent(props.target));
+  // The charge target while you drag the slider.
+  let tgDrag = $state(null);
   const ready = $derived(ent(props.ready_time));
   // Cars' battery %: a car with a plugged-in sensor only shows while it's
   // plugged in, so with several cars you see the one on the charger.
@@ -108,8 +110,8 @@
         </select></label>
     {/if}
     {#if target && show('target')}
-      <div class="tg"><span>Charge target <b>{Math.round(target.state)}%</b></span>
-        <Slider value={Number(target.state)} min={target.attributes.min ?? 0} max={target.attributes.max ?? 100} step={target.attributes.step ?? 5} height={30} color={C}
+      <div class="tg"><span>Charge target <b class:moving={tgDrag != null}>{Math.round(tgDrag ?? target.state)}%</b></span>
+        <Slider unit="%" oninput={(v) => (tgDrag = v)} value={Number(target.state)} min={target.attributes.min ?? 0} max={target.attributes.max ?? 100} step={target.attributes.step ?? 5} height={30} color={C}
           onchange={(v) => callService('number', 'set_value', { value: v }, { entity_id: target.entity_id })} /></div>
     {/if}
   </div>
@@ -125,6 +127,7 @@
   .title { font-weight: 600; }
   .st { color: var(--muted); font-size: .85em; text-transform: none; }
   .socs { display: flex; gap: 12px; flex: none; }
+  .moving { color: var(--c); }
   .soc { font-size: 1.4em; font-weight: 600; display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; }
   .soc.sm { font-size: 1.15em; }
   .soc span { font-size: .5em; font-weight: 500; color: var(--muted); max-width: 7em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

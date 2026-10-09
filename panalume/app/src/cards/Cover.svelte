@@ -39,7 +39,7 @@
     {#if show('buttons') && !below}{@render btns()}{/if}
   </div>
   {#if below}{@render btns()}{/if}
-  {#if slider}<Slider value={e.attributes.current_position} onchange={(v) => svc('set_cover_position', { position: v })} />{/if}
+  {#if slider}<Slider value={e.attributes.current_position} unit="%" onchange={(v) => svc('set_cover_position', { position: v })} />{/if}
 </div>
 
 {#snippet btns()}

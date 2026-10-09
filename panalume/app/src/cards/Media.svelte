@@ -69,7 +69,7 @@
   <div class="bottom" data-stop>
     {#if props.show_volume && has(4)}
       <button class="mini" onclick={() => svc('volume_mute', { is_volume_muted: !a.is_volume_muted })}><Icon icon={a.is_volume_muted ? 'mdi:volume-off' : 'mdi:volume-high'} size="1.2em" /></button>
-      <div class="vol"><Slider value={Math.round((a.volume_level ?? 0) * 100)} height={30} color="rgba(255,255,255,.85)" onchange={(v) => svc('volume_set', { volume_level: v / 100 })} /></div>
+      <div class="vol"><Slider value={Math.round((a.volume_level ?? 0) * 100)} unit="%" height={30} color="rgba(255,255,255,.85)" onchange={(v) => svc('volume_set', { volume_level: v / 100 })} /></div>
     {/if}
     {#if props.show_source && a.source_list?.length}
       <select value={a.source} onchange={(ev) => svc('select_source', { source: ev.currentTarget.value })}>

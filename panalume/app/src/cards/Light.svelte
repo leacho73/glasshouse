@@ -69,7 +69,7 @@
   {#if dimmable && show('brightness')}
     <div class="bri">
       <Slider value={pct} min={1} max={100} color="linear-gradient(90deg, color-mix(in srgb, var(--lc) 45%, transparent), var(--lc))" height={compact ? 34 : 42}
-        label={on ? '' : 'Off'} onchange={(v) => svc({ brightness_pct: v })} />
+        label={on ? '' : 'Off'} unit="%" onchange={(v) => svc({ brightness_pct: v })} />
     </div>
   {/if}
 

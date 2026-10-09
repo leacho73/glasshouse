@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.27.4
+
+- **Sliders show the value while you drag.** The Intelligent Octopus charge target now updates its "Charge target 80%" as you move it, and every slider (charge target, light brightness, volume, blind position, Number card) shows the value it's at in a small tag at the end of the fill until you let go.
+
 ## 0.27.3
 
 - **Electric vehicle card: Skodas on MySkoda.** Cars from the MySkoda integration (Enyaq, Elroq…) are now recognised and filled in: battery, range, charging state, power, charge limit, *Charger connected*, lock, air conditioning and mileage. They also appear in the card's **Device** box, so you can switch between, say, a Skoda and a Renault.

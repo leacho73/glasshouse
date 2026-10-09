@@ -38,11 +38,12 @@
     else if (d === 'cover') callService('cover', 'set_cover_position', { position: v }, target);
     else callService(d, 'set_value', { value: v }, target);
   }
+  let live = $state(null);
 </script>
 
 <div class="num" class:vertical={props.vertical}>
-  <div class="head"><Icon icon={t(props.icon) || entityIcon(e)} size="1.2em" /><span class="n">{t(props.name) || name(e)}</span><span class="v">{formatNumber(cfg.v)}{cfg.unit}</span></div>
-  <div class="s"><Slider value={cfg.v} min={cfg.min} max={cfg.max} step={cfg.step} vertical={props.vertical} height={props.vertical ? 64 : 44} color={t(props.color) || 'var(--accent)'} onchange={set} /></div>
+  <div class="head"><Icon icon={t(props.icon) || entityIcon(e)} size="1.2em" /><span class="n">{t(props.name) || name(e)}</span><span class="v">{formatNumber(live ?? cfg.v)}{cfg.unit}</span></div>
+  <div class="s"><Slider value={cfg.v} min={cfg.min} max={cfg.max} step={cfg.step} vertical={props.vertical} height={props.vertical ? 64 : 44} color={t(props.color) || 'var(--accent)'} unit={cfg.unit} oninput={(v) => (live = v)} onchange={set} /></div>
 </div>
 
 <style>

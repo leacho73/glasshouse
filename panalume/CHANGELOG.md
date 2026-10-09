@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.27.0
+
+- **Camera card plays video for cameras whose pictures fail.** Some cameras (e.g. Tapo) can't give Home Assistant a still picture in time, so the card stayed black with a broken-image icon. If a camera's pictures fail twice, or live mode gets nothing for 12 seconds, and the camera can stream, the card now plays Home Assistant's video stream instead, the way HA's own dashboard does ("Starting video…" while it starts). **Mode → Video stream** always uses it.
+- The camera card no longer shows a broken-image icon: it says when there's no picture or the video didn't start.
+
 ## 0.26.9
 
 - **Remove an entity from a card.** Every entity setting now has a **×** at its end to clear it, so that part of the card goes away. Before, you could only swap one entity for another.

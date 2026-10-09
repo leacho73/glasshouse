@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@mdi/js": "^7.4.47",
+    "hls.js": "^1.7.3",
     "ws": "^8.22.0"
   },
   "devDependencies": {
